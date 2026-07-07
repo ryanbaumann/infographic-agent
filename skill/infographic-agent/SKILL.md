@@ -1,30 +1,33 @@
 ---
 name: infographic-agent
 description: >
-  Generate professional infographics, visual summaries, charts, and data visualizations. 
-  This skill uses an executable Python script that generates a stunning HTML/CSS design and screenshots it using headless Playwright to output a clean, static PNG with 100% spelling accuracy and blazing fast speed.
-  It is fully portable to any agent CLI environment.
-compatibility: "Requires Python 3.8+, google-genai SDK, and Playwright (with the Chromium browser installed)"
+  Generate professional infographics, visual summaries, charts, and data visualizations directly with Gemini.
+  A research agent (gemini-3.5-flash) grounds the topic with Google Search and engineers a precise prompt,
+  then gemini-3.1-flash-lite-image renders it into a PNG. No browser, Playwright, or Chromium dependencies —
+  the only requirement is Google's GenAI SDK. Fully portable to any agent CLI environment.
+compatibility: "Requires Python 3.8+ and the google-genai SDK (one pip install, no browser)."
 metadata:
-  version: "2.0.1"
+  version: "3.0.0"
   author: "Infographic Agent contributors"
 ---
 
 # Infographic Agent Skill (Portable)
 
 <role>
-You are an expert AI Infographic Designer and Coordinator. You engineer and generate high-quality static infographic PNGs, ensuring perfect text rendering and structural accuracy.
+You are an expert AI Infographic Designer and Coordinator. You generate high-quality infographic PNGs directly with Gemini, ensuring accurate text rendering and a clean, professional layout.
 </role>
 
 <context>
-This skill relies on a hybrid generation pipeline implemented in Python:
-1. **Data & Layout (LLM):** Parses the user's content and constraints into a beautifully designed HTML/CSS page layout.
-2. **Visual Assembly (Headless Playwright):** Renders the page in a headless browser and screenshots it, outputting a static PNG. This completely avoids the text hallucination and spelling errors inherent to diffusion image models while maintaining premium styling (glassmorphism, gradients, modern typography).
-3. **Speed:** Because it runs in a single fast LLM pass without heavy diffusion image generation or multi-agent evaluation, it produces a static PNG in seconds.
+This skill mirrors the repo's web demo as a two-agent pipeline, both powered by Gemini:
 
-The entire workflow is encapsulated in `portable_infographic.py`.
+1. **Research orchestrator (`gemini-3.5-flash`):** reads the user's topic/content, optionally grounds it with Google Search, and engineers a precise, text-accurate image-generation prompt.
+2. **Image generator (`gemini-3.1-flash-lite-image`):** renders that prompt directly into a polished infographic PNG.
 
-**Security posture:** the model-generated HTML is untrusted, so the script renders it with JavaScript disabled and all network requests blocked — the page must be fully self-contained, and it cannot phone home or pull remote content into the screenshot. If this skill is invoked autonomously, treat the `--output` path as trusted input: it is resolved to a real path but will write wherever the invoker points it.
+After the first draft, an interactive refine loop lets the user iterate ("make the header bolder", "use teal accents") — each turn re-invokes the image model with the previous image plus the edit, saving a new revision in seconds.
+
+The entire workflow lives in `portable_infographic.py`. There are **no browser dependencies** — install is a single `pip install google-genai`.
+
+**Security posture:** the Gemini API key is user-provided. If not set via `GEMINI_API_KEY`, the CLI walks the user through getting a free key from Google AI Studio and stores it locally at `~/.config/infographic-agent/config.json` with `0600` permissions. Errors are scrubbed of anything that looks like a credential before printing. If this skill is invoked autonomously, treat `--output` as trusted input — the path is resolved but will write wherever the invoker points it.
 </context>
 
 <workflow>
@@ -35,46 +38,63 @@ The entire workflow is encapsulated in `portable_infographic.py`.
    npx skills add ryanbaumann/infographic-agent
 
    # Or run directly without installing via npm:
-   npx infographic-agent --install   # first-time Python dep setup
+   npx infographic-agent --install   # first-time: pip install google-genai
    ```
-3. **Setup Environment:** Install the Python dependencies and browser binary, then set credentials:
+3. **Set up the API key (free, ~20 seconds):** Either export it, or let the CLI onboard you:
    ```bash
-   pip install google-genai playwright
-   playwright install chromium
-
-   # Either a Gemini API key (get one at https://aistudio.google.com/apikey):
+   # Option A — set it yourself (get a free key at https://aistudio.google.com/apikey):
    export GEMINI_API_KEY="your-key"
-   # ...or Vertex AI credentials:
-   export GOOGLE_CLOUD_PROJECT="your-project"   # optional: GOOGLE_CLOUD_LOCATION (defaults to us-central1)
+
+   # Option B — one-click onboarding: just run the tool. If no key is found, it opens
+   # AI Studio for you, you paste the key, and it's saved locally for next time.
+   npx infographic-agent --setup
+
+   # (Enterprise) Vertex AI works too:
+   export GOOGLE_CLOUD_PROJECT="your-project"   # optional: GOOGLE_CLOUD_LOCATION (default us-central1)
    ```
-4. **Execute:** Run the portable script to generate the static PNG. A non-zero exit code means generation or rendering failed — check the printed error.
-5. **Deliver Output:** Output the path to the resulting `.png` file.
+4. **Execute:** Run the script to generate the PNG. A non-zero exit code means generation failed — check the printed error.
+5. **Deliver Output:** Output the path to the resulting `.png` file (and any `-v2`, `-v3` refinement revisions).
 </workflow>
 
 <instructions>
-When the user asks you to create an infographic:
+When the user asks you to create an infographic, run `portable_infographic.py`.
 
-1. **Run Generation via Script:**
-   Use the `portable_infographic.py` script provided in this skill directory to generate the static PNG infographic.
-
-**Example Usage:**
+**Example usage:**
 ```bash
-python3 skill/infographic-agent/portable_infographic.py --text "Top 5 programming languages in 2026" --output infographic.png
+python3 skill/infographic-agent/portable_infographic.py "Top 5 programming languages in 2026"
 ```
 
-### Alternative: Orchestrate directly with subagents
-If you prefer to orchestrate the generation yourself without the script:
-1. Write a prompt to an LLM subagent asking for a complete, self-contained HTML/CSS page containing a stunning, modern infographic based on the provided content.
-2. Load that HTML file and use a screenshot tool or standard screenshot script to capture the page as a static PNG.
-3. Save the returned PNG file and provide the link to the user.
+**With options:**
+```bash
+python3 skill/infographic-agent/portable_infographic.py \
+  --text "Q2 sales highlights" \
+  --output sales.png \
+  --mode executive-summary \
+  --aspect 16:9
+```
 
-Note: only the scripted path carries the hardening described above (temp-file cleanup, JS disabled, network blocked). If you orchestrate manually, apply the same precautions yourself before rendering untrusted HTML.
+**Key flags:**
+- `--mode` — `data-story` (default), `executive-summary`, `technical-deep-dive`, `classroom`, `quick-slide`, `custom`
+- `--aspect` — `1:1`, `9:16` (default), `16:9`, `3:4`, `4:3`, `1:4`
+- `--instructions` — extra styling/content guidance
+- `--no-research` — skip the research agent and generate directly from the text (faster, no web grounding)
+- `--yes` — non-interactive: generate once and exit (use this when running autonomously or in CI)
+- `--no-open` — do not auto-open the result in an image viewer
+- `--setup` — (re)configure the Gemini API key
+
+When invoking this skill autonomously (no human at the terminal), always pass `--yes` so it does not block on the interactive refine loop, and ensure `GEMINI_API_KEY` is set so it does not block on onboarding.
+
+### Alternative: orchestrate directly with subagents
+If you prefer to orchestrate without the script:
+1. Ask a research/LLM subagent (e.g. `gemini-3.5-flash`) to produce a dense, text-accurate image-generation prompt from the user's content.
+2. Send that prompt to an image model (`gemini-3.1-flash-lite-image`) with `responseModalities: ['TEXT', 'IMAGE']` and save the returned PNG.
+3. Provide the link to the user, and offer refinement turns by re-sending the previous image plus the edit instruction.
 </instructions>
 
 <principles>
 ### The 3 Hard Rules of Infographics
 
-1. **Text Accuracy First:** Never use an image model to draw text. Always use structured text rendered over visuals (like HTML/CSS screenshotting) to guarantee 100% spelling accuracy.
-2. **Data Accuracy Rule:** Never hallucinate data points. Give the exact numbers requested.
+1. **Text Accuracy First:** Quote every text string exactly in the image prompt so the model renders it verbatim. Never let the model invent or misspell labels.
+2. **Data Accuracy Rule:** Never hallucinate data points. Ground with Google Search and give the exact numbers requested.
 3. **Layout Complexity Rule:** Use clean, standard, modern UI paradigms (cards, dashboards, vertical timelines) rather than messy unstructured layouts.
 </principles>
