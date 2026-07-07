@@ -6,7 +6,7 @@
   "author": "Ryan Baumann",
   "repository": {
     "type": "git",
-    "url": "https://github.com/ryanbaumann/infographic-agent.git",
+    "url": "git+https://github.com/ryanbaumann/infographic-agent.git",
     "directory": "skill/infographic-agent"
   },
   "homepage": "https://github.com/ryanbaumann/infographic-agent#the-portable-skill",
@@ -24,7 +24,7 @@
     "node": ">=18"
   },
   "bin": {
-    "infographic-agent": "./bin/infographic-agent.js"
+    "infographic-agent": "bin/infographic-agent.js"
   },
   "files": [
     "bin/",
