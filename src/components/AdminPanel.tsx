@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { AdminConfig, ImageResolution } from '../types';
 import { DEFAULT_ADMIN_CONFIG } from '../types';
-import { saveApiKey, clearApiKey, hasApiKey } from '../services/geminiService';
+import { saveApiKey, clearApiKey, hasApiKey, getTrialTurnsCount } from '../services/geminiService';
 
 const isMasterView = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('view') === 'master';
 const isProdDeploy = import.meta.env.PROD || import.meta.env.VITE_PRODUCTION_DEPLOY === 'true';
@@ -96,6 +96,23 @@ export default function AdminPanel({ config, onUpdate, onClose }: AdminPanelProp
             </a>
             .
           </p>
+          {import.meta.env.VITE_GEMINI_API_KEY && !keyIsSet && (
+            <div className={`mt-3 p-2.5 rounded-gbtn text-xs border ${
+              getTrialTurnsCount() >= 3
+                ? 'bg-gerror-50 dark:bg-gerror/10 border-gerror/20 text-gerror'
+                : 'bg-gblue-50 dark:bg-gblue-950/20 border-gblue-100 dark:border-gblue-900/30 text-gblue-600 dark:text-gblue-300'
+            }`}>
+              {getTrialTurnsCount() >= 3 ? (
+                <span>
+                  <span className="font-semibold">Trial Expired:</span> 3/3 turns used. Please save your own API key to continue.
+                </span>
+              ) : (
+                <span>
+                  <span className="font-semibold">Free Trial:</span> {getTrialTurnsCount()}/3 turns used.
+                </span>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Orchestrator Model */}

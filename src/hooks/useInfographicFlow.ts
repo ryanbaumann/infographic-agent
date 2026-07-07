@@ -3,7 +3,7 @@ import type { AppState, InfographicConfig, AdminConfig, UploadedFile, Generation
 import { DEFAULT_ADMIN_CONFIG, DEFAULT_INFOGRAPHIC_CONFIG, MAX_FILES, MAX_FILE_SIZE_MB, MAX_TOTAL_SIZE_MB } from '../types';
 import type { StepType } from '../types';
 import { processFile } from '../services/fileProcessor';
-import { prepareInfographic, generateInfographic, refineInfographic, generateFilename } from '../services/geminiService';
+import { prepareInfographic, generateInfographic, refineInfographic, generateFilename, incrementTrialTurns } from '../services/geminiService';
 import { downloadImage } from '../services/downloadService';
 import localforage from 'localforage';
 
@@ -252,6 +252,12 @@ export function useInfographicFlow() {
         timestamp: Date.now(),
       };
 
+      // Increment trial turns if using trial key
+      const isTrial = !state.adminConfig.geminiApiKey && !localStorage.getItem('infographic-gemini-key') && !!import.meta.env.VITE_GEMINI_API_KEY;
+      if (isTrial) {
+        incrementTrialTurns();
+      }
+
       setState(s => ({
         ...s,
         currentResult: result,
@@ -348,6 +354,12 @@ export function useInfographicFlow() {
         text: result.description || `Done! I've applied: "${instruction}"`,
         timestamp: Date.now(),
       };
+
+      // Increment trial turns if using trial key
+      const isTrial = !state.adminConfig.geminiApiKey && !localStorage.getItem('infographic-gemini-key') && !!import.meta.env.VITE_GEMINI_API_KEY;
+      if (isTrial) {
+        incrementTrialTurns();
+      }
 
       setState(s => ({
         ...s,
@@ -447,6 +459,12 @@ export function useInfographicFlow() {
         text: result.description || `I've upgraded the resolution to ${res}.`,
         timestamp: Date.now(),
       };
+
+      // Increment trial turns if using trial key
+      const isTrial = !state.adminConfig.geminiApiKey && !localStorage.getItem('infographic-gemini-key') && !!import.meta.env.VITE_GEMINI_API_KEY;
+      if (isTrial) {
+        incrementTrialTurns();
+      }
 
       setState(s => ({
         ...s,

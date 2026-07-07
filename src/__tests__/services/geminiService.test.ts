@@ -3,6 +3,8 @@ import {
   getApiKey,
   clearApiKey,
   hasApiKey,
+  getTrialTurnsCount,
+  incrementTrialTurns,
 } from '../../services/geminiService';
 import type { AdminConfig } from '../../types';
 
@@ -190,6 +192,34 @@ describe('geminiService', () => {
       };
 
       expect(err.status).toBe(408);
+    });
+  });
+
+  describe('trial turns', () => {
+    it('should return 0 by default', () => {
+      expect(getTrialTurnsCount()).toBe(0);
+    });
+
+    it('should increment trial turns', () => {
+      expect(getTrialTurnsCount()).toBe(0);
+      incrementTrialTurns();
+      expect(getTrialTurnsCount()).toBe(1);
+      incrementTrialTurns();
+      expect(getTrialTurnsCount()).toBe(2);
+    });
+
+    it('should handle localStorage errors when getting and setting trial turns', () => {
+      const originalGetItem = localStorage.getItem;
+      const originalSetItem = localStorage.setItem;
+      
+      localStorage.getItem = vi.fn(() => { throw new Error('SecurityError'); });
+      localStorage.setItem = vi.fn(() => { throw new Error('QuotaExceededError'); });
+
+      expect(getTrialTurnsCount()).toBe(0);
+      expect(() => incrementTrialTurns()).not.toThrow();
+
+      localStorage.getItem = originalGetItem;
+      localStorage.setItem = originalSetItem;
     });
   });
 });

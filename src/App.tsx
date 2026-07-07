@@ -106,6 +106,7 @@ export default function App() {
             onClearError={flow.clearError}
             history={state.history}
             onLoadHistory={flow.loadHistoryEntry}
+            onOpenSettings={() => setShowAdmin(true)}
           />
         )}
         {state.step === 'studio' && (
@@ -127,6 +128,7 @@ export default function App() {
             refineThoughts={state.refineThoughts}
             mode={state.config.mode}
             aspectRatio={state.config.aspectRatio}
+            onOpenSettings={() => setShowAdmin(true)}
           />
         )}
       </main>

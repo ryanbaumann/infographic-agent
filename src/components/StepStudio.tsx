@@ -23,6 +23,7 @@ interface StepStudioProps {
   mode: InfographicMode;
   aspectRatio: AspectRatio;
   onClearError: () => void;
+  onOpenSettings: () => void;
 }
 
 export default function StepStudio({
@@ -43,6 +44,7 @@ export default function StepStudio({
   mode,
   aspectRatio,
   onClearError,
+  onOpenSettings,
 }: StepStudioProps) {
   // === State ===
   const [elapsed, setElapsed] = useState(0);
@@ -124,7 +126,7 @@ export default function StepStudio({
   if (isInProgress) {
     return (
       <div className="max-w-7xl mx-auto px-4 pb-8">
-        {error && <ErrorBanner error={error} onDismiss={onClearError} />}
+        {error && <ErrorBanner error={error} onDismiss={onClearError} onOpenSettings={onOpenSettings} />}
         <div className="flex flex-col lg:flex-row gap-6">
           <ThoughtStream
             thoughts={thoughtBubbles}
@@ -170,7 +172,7 @@ export default function StepStudio({
             </button>
           </div>
         )}
-        {error && <ErrorBanner error={error} onDismiss={onClearError} />}
+        {error && <ErrorBanner error={error} onDismiss={onClearError} onOpenSettings={onOpenSettings} />}
         <div className="flex flex-col-reverse lg:flex-row gap-6">
           <ChatPanel messages={chatMessages} mode={mode} onSendMessage={handleRefineFromChat} isRefining={isRefining} refineThoughts={refineThoughts} />
           <div className="flex-1 min-w-0 space-y-4">
@@ -273,7 +275,7 @@ export default function StepStudio({
 // =========================================================================
 // Sub-component: Error Banner
 // =========================================================================
-function ErrorBanner({ error, onDismiss }: { error: string; onDismiss: () => void }) {
+function ErrorBanner({ error, onDismiss, onOpenSettings }: { error: string; onDismiss: () => void; onOpenSettings: () => void }) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = useCallback(() => {
@@ -287,6 +289,41 @@ function ErrorBanner({ error, onDismiss }: { error: string; onDismiss: () => voi
       }
     );
   }, [error]);
+
+  if (error.includes('Trial limit exceeded')) {
+    return (
+      <div className="bg-gradient-to-br from-gblue-50 to-gblue-100/50 dark:from-gblue-950/20 dark:to-gblue-900/10 rounded-gcard p-6 border border-gblue-100 dark:border-gblue-900/30 flex flex-col md:flex-row items-center justify-between gap-6 shadow-gcard-sm animate-fade-in mb-4">
+        <div className="flex items-start gap-4">
+          <div className="p-3 bg-gblue-500 text-white rounded-gbtn flex-shrink-0 shadow-sm">
+            <span className="material-symbols-outlined text-2xl">auto_awesome</span>
+          </div>
+          <div>
+            <h4 className="text-base font-bold text-gtext-primary dark:text-gtext-primary-dark">Trial limit reached (3 turns used)</h4>
+            <p className="text-sm text-gtext-secondary dark:text-gtext-secondary-dark mt-1 max-w-xl">
+              We hope you enjoyed creating infographics! To continue generating and refining, please configure your own Gemini API key. It's completely free to get from Google AI Studio.
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-3 w-full md:w-auto">
+          <button
+            type="button"
+            onClick={onDismiss}
+            className="flex-1 md:flex-initial px-4 py-2 text-sm font-medium text-gtext-secondary dark:text-gtext-secondary-dark hover:bg-gsurface-light dark:hover:bg-gsurface-elevated-dark rounded-gbtn border border-gborder-light dark:border-gborder-dark transition-colors"
+          >
+            Dismiss
+          </button>
+          <button
+            type="button"
+            onClick={onOpenSettings}
+            className="flex-1 md:flex-initial px-4 py-2 text-sm font-semibold text-white bg-gblue-600 hover:bg-gblue-700 rounded-gbtn shadow-sm transition-colors inline-flex items-center justify-center gap-1.5 cursor-pointer"
+          >
+            <span className="material-symbols-outlined text-base">vpn_key</span>
+            Add API Key
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div role="alert" className="bg-gerror-50 dark:bg-gerror/10 rounded-gbtn p-4 border border-gerror/20 flex items-start justify-between animate-fade-in mb-4">
