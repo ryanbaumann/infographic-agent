@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import type { AdminConfig, ImageResolution } from '../types';
 import { DEFAULT_ADMIN_CONFIG } from '../types';
+import { saveApiKey, clearApiKey, hasApiKey } from '../services/geminiService';
 
 const isMasterView = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('view') === 'master';
 const isProdDeploy = import.meta.env.PROD || import.meta.env.VITE_PRODUCTION_DEPLOY === 'true';
@@ -21,6 +23,9 @@ const sectionClasses = 'p-6 border-b border-gborder-light dark:border-gborder-da
 export default function AdminPanel({ config, onUpdate, onClose }: AdminPanelProps) {
   const thinkingLevels: AdminConfig['thinkingLevel'][] = ['LOW', 'HIGH'];
   const resolutions: ImageResolution[] = ['0.5K', '1K', '2K', '4K'];
+  const [keyDraft, setKeyDraft] = useState('');
+  const [showKey, setShowKey] = useState(false);
+  const [keyIsSet, setKeyIsSet] = useState(() => hasApiKey(config));
 
   return (
     <>
@@ -38,6 +43,59 @@ export default function AdminPanel({ config, onUpdate, onClose }: AdminPanelProp
           >
             <span className="material-symbols-outlined">close</span>
           </button>
+        </div>
+
+        {/* Gemini API Key */}
+        <div className={sectionClasses}>
+          <label className={labelClasses}>Gemini API Key</label>
+          <div className="flex gap-2">
+            <input
+              type={showKey ? 'text' : 'password'}
+              value={keyDraft}
+              onChange={(e) => setKeyDraft(e.target.value)}
+              placeholder={keyIsSet ? 'Key saved — paste a new key to replace it' : 'Paste your Gemini API key'}
+              className={inputClasses}
+              autoComplete="off"
+            />
+            <button
+              onClick={() => setShowKey(!showKey)}
+              className="px-2 rounded-gbtn hover:bg-gsurface-light dark:hover:bg-gsurface-elevated-dark text-gtext-secondary dark:text-gtext-secondary-dark transition-colors"
+              aria-label={showKey ? 'Hide API key' : 'Show API key'}
+            >
+              <span className="material-symbols-outlined text-xl">{showKey ? 'visibility_off' : 'visibility'}</span>
+            </button>
+          </div>
+          <div className="flex gap-2 mt-2">
+            <button
+              onClick={() => {
+                saveApiKey(keyDraft.trim());
+                setKeyDraft('');
+                setKeyIsSet(true);
+              }}
+              disabled={!keyDraft.trim()}
+              className="flex-1 px-3 py-2 rounded-gbtn text-sm font-medium bg-gblue-500 text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              Save key
+            </button>
+            {keyIsSet && (
+              <button
+                onClick={() => {
+                  clearApiKey();
+                  setKeyIsSet(false);
+                }}
+                className="flex-1 px-3 py-2 rounded-gbtn text-sm font-medium bg-gsurface-light dark:bg-gsurface-elevated-dark text-gtext-secondary dark:text-gtext-secondary-dark transition-colors"
+              >
+                Clear key
+              </button>
+            )}
+          </div>
+          <p className="mt-2 text-xs text-gtext-secondary dark:text-gtext-secondary-dark">
+            Stored only in your browser (localStorage) and sent only to Google&apos;s Gemini API. Get a free key at{' '}
+            <a href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer" className="text-gblue-600 dark:text-gblue-300 underline">
+              aistudio.google.com/apikey
+            </a>
+            .
+          </p>
         </div>
 
         {/* Orchestrator Model */}

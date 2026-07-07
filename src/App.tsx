@@ -24,7 +24,7 @@ export default function App() {
             <div className="flex items-center gap-2">
               <span className="material-symbols-outlined text-2xl text-gblue-600">insert_chart</span>
               <span className="font-semibold text-xl text-gtext-primary dark:text-gtext-primary-dark hidden sm:inline">
-                Infographic Architect
+                Infographic Agent
               </span>
             </div>
 

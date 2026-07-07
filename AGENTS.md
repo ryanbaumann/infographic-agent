@@ -4,7 +4,7 @@ Instructions for AI coding agents working in this repository.
 
 ## Project Overview
 
-Infographic Architect is a client-side React 19 + TypeScript single-page application that turns text, files, and URLs into professional infographics using the Gemini API. It runs entirely in the browser: users supply their own Gemini API key (never sent to any backend of ours), and the production build compiles to a single self-contained `dist/index.html` via `vite-plugin-singlefile`. There is no server component to maintain.
+Infographic Agent is a client-side React 19 + TypeScript single-page application that turns text, files, and URLs into professional infographics using the Gemini API. It runs entirely in the browser: users supply their own Gemini API key (never sent to any backend of ours), and the production build compiles to a single self-contained `dist/index.html` via `vite-plugin-singlefile`. There is no server component to maintain.
 
 ## Setup
 
@@ -42,7 +42,7 @@ cp .env.example .env
 - Styling uses Tailwind utility classes directly in JSX via the CDN build — there are no separate CSS files to edit.
 - Security constraints to preserve when touching related code:
   - The CSP `<meta>` tags in `app.html` — do not loosen them without a clear reason.
-  - File upload validation limits: 50MB per file, 200MB total.
+  - File upload validation limits: 20MB per file, 50MB total.
   - Never commit API keys or secrets; `.env` is gitignored, and `.env.example` should stay a placeholder.
 
 ## Verification Checklist

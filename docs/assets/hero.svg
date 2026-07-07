@@ -46,7 +46,7 @@
     <rect x="0" y="0" width="44" height="44" rx="12" fill="url(#card-blue)"/>
     <text x="22" y="30" font-size="24" text-anchor="middle" fill="#ffffff">📊</text>
   </g>
-  <text x="118" y="83" font-size="26" font-weight="700" fill="#E8EAED">Infographic Architect</text>
+  <text x="118" y="83" font-size="26" font-weight="700" fill="#E8EAED">Infographic Agent</text>
 
   <!-- Headline -->
   <text x="60" y="190" font-size="52" font-weight="800" fill="#E8EAED">Turn any content into</text>

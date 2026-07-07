@@ -218,6 +218,16 @@ export function getApiKey(adminConfig: AdminConfig): string {
   return '';
 }
 
+export function saveApiKey(key: string): void {
+  try {
+    localStorage.setItem(LOCAL_STORAGE_KEY, key);
+  } catch {
+    // ignore storage errors
+  }
+  cachedAI = null;
+  cachedApiKey = null;
+}
+
 export function clearApiKey(): void {
   try {
     localStorage.removeItem(LOCAL_STORAGE_KEY);
@@ -370,7 +380,7 @@ export async function prepareInfographic(
 
   return retryWithBackoff(async () => {
     const ai = getAI(adminConfig);
-    const model = adminConfig.orchestratorModel || 'gemini-3.1-flash-lite-image';
+    const model = adminConfig.orchestratorModel || 'gemini-3.5-flash';
 
     const modeOption = (await import('../types')).MODE_OPTIONS.find(m => m.id === config.mode);
     const modeHint = modeOption?.promptHint || config.customModeText || '';

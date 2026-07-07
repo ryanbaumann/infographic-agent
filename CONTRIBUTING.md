@@ -1,4 +1,4 @@
-# Contributing to Infographic Architect
+# Contributing to Infographic Agent
 
 Contributions from humans **and AI coding agents** are welcome!
 

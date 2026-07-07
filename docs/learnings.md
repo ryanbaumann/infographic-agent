@@ -1,6 +1,6 @@
-# Infographic Architect - Technical & Architectural Learnings
+# Infographic Agent - Technical & Architectural Learnings
 
-This document compiles the core engineering lessons, API specifications, and design patterns discovered and implemented during the development of the Infographic Architect application.
+This document compiles the core engineering lessons, API specifications, and design patterns discovered and implemented during the development of the Infographic Agent application.
 
 ---
 
@@ -245,13 +245,12 @@ Each header prevents a specific attack:
 ### Environment Variables
 
 **Build Time**:
-- None required (app is fully self-contained after build)
+- `VITE_GEMINI_API_KEY` (optional): if set when `npm run build` runs, Vite inlines the key into the bundled `dist/index.html`. Only do this for private/internal deployments — anyone who can load the page can read the key from the HTML.
 
 **Runtime**:
-- `VITE_API_KEY`: Optional Gemini API key (if set in Cloud Run env)
-- Fallback: Prompt user for key or read from localStorage
+- Users provide their own key via the in-app settings panel; it persists in browser localStorage only.
 
-No secrets in Docker image; all sensitive data is user-provided at runtime.
+Do not bake a key into a publicly hosted Docker image; keep public deployments key-less and let each visitor supply their own.
 
 ---
 

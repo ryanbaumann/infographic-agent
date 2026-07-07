@@ -1,6 +1,6 @@
 <div align="center">
 
-![Infographic Architect](docs/assets/hero.svg)
+![Infographic Agent](docs/assets/hero.svg)
 
 ### Turn any content into beautiful infographics
 
@@ -62,15 +62,15 @@ See [`docs/architecture.md`](docs/architecture.md) for the full technical deep-d
 
 ## The Portable Skill
 
-Prefer working from a coding agent instead of the browser? [`skill/portable-infographic-architect/`](skill/portable-infographic-architect/) packages the same idea as a standalone, agent-agnostic **skill** — a `SKILL.md` plus a `portable_infographic.py` script that any AI coding agent with skill/tool support can invoke to generate an infographic PNG directly from the command line, no web app required.
+Prefer working from a coding agent instead of the browser? [`skill/infographic-agent/`](skill/infographic-agent/) packages the same idea as a standalone, agent-agnostic **skill** — a `SKILL.md` plus a `portable_infographic.py` script that any AI coding agent with skill/tool support can invoke to generate an infographic PNG directly from the command line, no web app required.
 
 ## Deployment
 
 **Docker:**
 
 ```bash
-docker build -t infographic-architect .
-docker run -p 8080:8080 infographic-architect
+docker build -t infographic-agent .
+docker run -p 8080:8080 infographic-agent
 ```
 
 **Docker Compose:**
@@ -83,7 +83,10 @@ Both serve the built app via nginx on `http://localhost:8080`.
 
 **Google Cloud Run:** [`cloudbuild.yaml`](cloudbuild.yaml) builds the image, pushes it to Container Registry, and deploys it to Cloud Run — wire it up with `gcloud builds submit` or a Cloud Build trigger.
 
-Because the build output is a single self-contained `dist/index.html` (via `vite-plugin-singlefile`), you can also drop it onto any static host (Cloud Storage, S3, GitHub Pages, nginx, etc.) with no server-side runtime at all.
+Because the build output is a single `dist/index.html` with all JS inlined (via `vite-plugin-singlefile`), you can also drop it onto any static host (Cloud Storage, S3, GitHub Pages, nginx, etc.) with no server-side runtime at all. Two caveats:
+
+- **Never build a public artifact with a real key in `.env`** — Vite inlines `VITE_GEMINI_API_KEY` into `dist/index.html` in plaintext. Public deployments should ship key-less; visitors add their own key in the settings panel.
+- The page loads Tailwind's Play CDN and Google Fonts at runtime, so browsers need outbound access to `cdn.tailwindcss.com`, `fonts.googleapis.com`, and `fonts.gstatic.com` (it is not fully offline/air-gap friendly).
 
 ## Testing
 
@@ -118,7 +121,7 @@ infographic-agent/
 │   ├── services/                # geminiService, fileProcessor, downloadService
 │   └── __tests__/               # Vitest unit tests + fixtures
 ├── tests/                     # Playwright e2e specs
-├── skill/portable-infographic-architect/  # Portable, agent-agnostic CLI skill
+├── skill/infographic-agent/  # Portable, agent-agnostic CLI skill
 ├── docs/
 │   ├── architecture.md         # 2-agent pipeline deep-dive
 │   ├── learnings.md             # Engineering notes from development
@@ -133,4 +136,5 @@ infographic-agent/
 - **App keeps asking for an API key** — get a free one at [aistudio.google.com/apikey](https://aistudio.google.com/apikey) and either put it in `.env` as `VITE_GEMINI_API_KEY` (dev) or paste it into the settings panel (it's stored in your browser only).
 - **"File exceeds maximum size" / files silently skipped** — individual files are capped at 20MB, 50MB total per generation, up to 14 files; split large PDFs or compress images.
 - **Generation feels slow** — the analysis agent may search the web or read large files before the image agent starts rendering; watch the thought stream, it's usually still working, not stuck. Higher resolutions (3K/4K) also take longer.
+- **`npm run dev` prints `spawn xdg-open ENOENT`** — harmless in headless environments (SSH, containers, CI): the server is running fine, there's just no browser to auto-open. Visit `http://localhost:3456` yourself.
 

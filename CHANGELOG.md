@@ -70,7 +70,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Initial release of Infographic Architect
+- Initial release of Infographic Agent
 - 2-agent pipeline: Prepare (gemini-3.5-flash) + Generate (gemini-3.1-flash-image)
 - React 19 SPA with Vite build tooling
 - Support for PDF, CSV, image, and text file uploads

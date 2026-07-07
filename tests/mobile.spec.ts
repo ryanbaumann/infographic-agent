@@ -10,7 +10,7 @@ test.describe('Mobile Viewport Tests', () => {
   });
 
   test('should render hero on mobile', async ({ page }) => {
-    await expect(page).toHaveTitle(/Infographic Architect/i);
+    await expect(page).toHaveTitle(/Infographic Agent/i);
     await expect(page.locator('h1')).toContainText(/Turn any content into beautiful infographics/i);
 
     // Button should be visible and clickable
@@ -204,7 +204,7 @@ test.describe('Tablet Viewport Tests', () => {
   test('should render properly on tablet', async ({ page }) => {
     await page.goto('/');
 
-    await expect(page).toHaveTitle(/Infographic Architect/i);
+    await expect(page).toHaveTitle(/Infographic Agent/i);
     await expect(page.getByRole('button', { name: 'Get Started' })).toBeVisible();
   });
 

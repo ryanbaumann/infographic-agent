@@ -24,8 +24,8 @@ const MAGIC_BYTES: Record<string, Uint8Array> = {
   'image/webp': new Uint8Array([0x52, 0x49, 0x46, 0x46]), // RIFF (WebP container)
 };
 
-// File size limits (in bytes)
-const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB per file
+// File size limits (in bytes) — keep in sync with MAX_FILE_SIZE_MB in types.ts
+const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB per file
 
 /**
  * Validates file magic bytes against expected signature
