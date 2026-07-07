@@ -1,5 +1,5 @@
 name: Bug Report
-description: Report a bug to help improve Infographic Architect
+description: Report a bug to help improve Infographic Agent
 labels: ["bug"]
 body:
   - type: markdown

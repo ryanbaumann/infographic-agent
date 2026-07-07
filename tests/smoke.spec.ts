@@ -56,7 +56,7 @@ test('has expected title and renders hero', async ({ page }) => {
   await page.goto('/');
 
   // Expect a title "to contain" a substring.
-  await expect(page).toHaveTitle(/Infographic Architect/i);
+  await expect(page).toHaveTitle(/Infographic Agent/i);
 
   // Expect the page to render the main hero component.
   await expect(page.locator('h1')).toContainText(/Turn any content into beautiful infographics/i);

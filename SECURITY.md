@@ -2,7 +2,7 @@
 
 ## Overview
 
-Infographic Architect is a client-side React SPA that leverages Gemini API for infographic generation. This document outlines the security architecture, best practices, and vulnerability disclosure process.
+Infographic Agent is a client-side React SPA that leverages Gemini API for infographic generation. This document outlines the security architecture, best practices, and vulnerability disclosure process.
 
 ## API Key Security Model
 
@@ -26,10 +26,12 @@ By design, API keys are **user-provided and client-side**. This model means:
 
 - **Risk**: API keys in localStorage are accessible to XSS attacks
 - **Mitigation**: 
-  - Content Security Policy (CSP) prevents inline script injection
+  - A Content Security Policy restricts where scripts, styles, and connections can come from (see its limits below)
+  - Model output is rendered as plain text/images through React — no `dangerouslySetInnerHTML`, `eval`, or iframes anywhere in the app
   - Input validation prevents file-based attacks
-  - No untrusted content is executed in the browser
   - Users should use **restricted API keys** (see below)
+- **Risk**: `VITE_GEMINI_API_KEY` set at build time is inlined into the bundled `dist/index.html` — anyone who can load the page can read it
+- **Mitigation**: only bake a key into private/internal deployments; for public hosting, ship without a key and let each visitor supply their own via the settings panel
 
 ## Using Restricted API Keys (Recommended)
 
@@ -60,8 +62,8 @@ Example Node.js proxy:
 app.post('/api/generate-infographic', authenticateUser, async (req, res) => {
   const { prompt, images } = req.body;
   // Validate inputs, apply rate limiting, log usage
-  const response = await geminiClient.generateContent({
-    model: 'imagen-3.0-fast-generate-002',
+  const response = await geminiClient.models.generateContent({
+    model: 'gemini-3.1-flash-lite-image',
     contents: [...images, { text: prompt }],
   });
   res.json(response);
@@ -78,28 +80,38 @@ Benefits:
 
 ### Content Security Policy (CSP)
 
-A strict CSP is configured in `app.html` to prevent injection attacks:
+A CSP is delivered three ways — a `<meta>` tag in `app.html`, `public/_headers` (static hosts like Netlify/Cloudflare Pages), and `nginx.conf` (Docker). The policy:
 
 ```
 default-src 'self'
-script-src 'self' https://cdn.tailwindcss.com
+script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com
 style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.tailwindcss.com
-frame-ancestors 'none'
+font-src 'self' https://fonts.gstatic.com https://fonts.googleapis.com
+connect-src 'self' https://generativelanguage.googleapis.com
+img-src 'self' data: blob:
+frame-ancestors 'none'   (header-delivered only; ignored in <meta> per spec)
+base-uri 'self'
+form-action 'self'
 ```
 
-This prevents:
-- **Inline script injection** - untrusted scripts cannot run
-- **Framing attacks** - page cannot be embedded in iframes
+**Known limitation:** `script-src` includes `'unsafe-inline'`. This is required by the Tailwind Play CDN's inline configuration script (see `docs/learnings.md` — the Play CDN does not support SRI/CORS), and by the single-file production build, which inlines the app bundle into `dist/index.html`. It means the CSP does **not** block inline script injection; the real XSS defense is that the app never renders untrusted HTML (React text rendering only, no `dangerouslySetInnerHTML`). Compiling Tailwind at build time and moving to nonce-based scripts would allow dropping `'unsafe-inline'` — contributions welcome.
+
+What the CSP does enforce:
+- **Script/style origins** - only same-origin and the pinned CDNs can serve script and style files
+- **Network egress** - the page can only talk to the Gemini API endpoint (`generativelanguage.googleapis.com`)
+- **Framing attacks** - page cannot be embedded in iframes (header-based `frame-ancestors` plus `X-Frame-Options: DENY`)
 - **Form hijacking** - forms can only submit to same origin
 
 ### Input Validation
 
 File uploads are validated by:
 
-1. **Magic byte validation** - file content must match declared MIME type (prevents disguised uploads)
+1. **Magic byte validation** - for PDF, PNG, JPEG, and WebP, file content must match the declared MIME type (prevents disguised uploads); other whitelisted formats are validated by MIME type and size only
 2. **MIME type whitelist** - only safe formats accepted (PDF, images, text, spreadsheets)
-3. **Size limits** - individual files capped at 50MB, total at 200MB
+3. **Size limits** - individual files capped at 20MB, 50MB total per generation, up to 14 files
 4. **Early validation** - magic bytes checked before full base64 decode (prevents DoS)
+
+Uploaded files are never executed or rendered locally — they are only base64-encoded and sent to the Gemini API.
 
 Supported formats:
 - **Documents**: PDF
@@ -113,7 +125,7 @@ Note: The Tailwind Play CDN (`cdn.tailwindcss.com`) does not support CORS header
 
 ### Security Headers
 
-The following headers are configured in `public/_headers` (for static hosts) and `app.html`:
+The following headers are configured in `public/_headers` (for static hosts) and `nginx.conf` (Docker); `app.html` additionally carries the CSP as a `<meta>` tag so it applies even without server headers:
 
 | Header | Value | Purpose |
 |--------|-------|---------|

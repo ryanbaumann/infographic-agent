@@ -7,7 +7,7 @@ test.describe('Full Infographic Generation Flow', () => {
 
   test('should complete full generation flow with standard mode', async ({ page }) => {
     // Verify hero page
-    await expect(page).toHaveTitle(/Infographic Architect/i);
+    await expect(page).toHaveTitle(/Infographic Agent/i);
     await expect(page.locator('h1')).toContainText(/Turn any content into beautiful infographics/i);
 
     // Click get started

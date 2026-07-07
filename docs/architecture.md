@@ -450,6 +450,6 @@ async function generateWithRetry(prompt, maxRetries = 3) {
 
 ## 8. Related Documentation
 
-- **Engineering & Architectural Learnings**: See [docs/learnings.md](docs/learnings.md) for detailed analysis on performance bottlenecks, model capabilities, storage optimization, and mobile patterns.
-- **Security & Deployment**: See [SECURITY.md](SECURITY.md) and [DEPLOYMENT.md](DEPLOYMENT.md) for deployment options, API key security, and production hardening.
-- **Changelog**: See [CHANGELOG.md](CHANGELOG.md) for version history and migration notes.
+- **Engineering & Architectural Learnings**: See [learnings.md](learnings.md) for detailed analysis on performance bottlenecks, model capabilities, storage optimization, and mobile patterns.
+- **Security & Deployment**: See [SECURITY.md](../SECURITY.md) for deployment options, API key security, and production hardening, and the [README's Deployment section](../README.md#deployment) for Docker/Cloud Run instructions.
+- **Changelog**: See [CHANGELOG.md](../CHANGELOG.md) for version history and migration notes.

@@ -5,7 +5,7 @@ interface BeforeAfterSliderProps {
   afterImage: string;  // base64 or blob url
 }
 
-const getSrc = (src: string) => src.startsWith('blob:') || src.startsWith('http') || src.startsWith('data:') ? src : `data:image/png;base64,${src}`;
+const getSrc = (src: string) => src.startsWith('blob:') || src.startsWith('data:') ? src : `data:image/png;base64,${src}`;
 
 export default function BeforeAfterSlider({ beforeImage, afterImage, className, imgClassName }: BeforeAfterSliderProps & { className?: string, imgClassName?: string }) {
   const [position, setPosition] = useState(50);
