@@ -1,11 +1,11 @@
-import { test, expect, devices } from '@playwright/test';
+import { test, expect, devices, type Page } from '@playwright/test';
 
 // Test on mobile viewport (test.use with a device must be top-level,
 // not inside a describe block, because it forces a new worker)
 test.use({ ...devices['Pixel 5'] });
 
 // Helper to write to localforage IndexedDB
-async function setLocalForageItem(page: any, key: string, value: unknown) {
+async function setLocalForageItem(page: Page, key: string, value: unknown) {
   await page.goto('/');
   await page.waitForLoadState('domcontentloaded');
   await page.evaluate(
