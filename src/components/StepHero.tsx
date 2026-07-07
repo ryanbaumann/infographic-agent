@@ -79,6 +79,35 @@ export default function StepHero({ onGetStarted, onTryExample, onSelectMode }: S
         </button>
       </div>
 
+      {/* CLI Skill Install Chip */}
+      <div className="flex items-center justify-center gap-3 flex-wrap">
+        <span className="text-xs font-medium text-gtext-secondary dark:text-gtext-secondary-dark uppercase tracking-wider">
+          Use from any AI coding agent
+        </span>
+        <a
+          href="https://github.com/ryanbaumann/infographic-agent/tree/main/skill/infographic-agent"
+          target="_blank"
+          rel="noopener noreferrer"
+          id="npx-skills-install-link"
+          className="group inline-flex items-center gap-2 px-4 py-2 rounded-gpill
+            bg-gsurface-light dark:bg-gsurface-card-dark
+            border border-gborder-light dark:border-gborder-dark
+            hover:border-gblue-300 dark:hover:border-gblue-700
+            hover:bg-white dark:hover:bg-gsurface-elevated-dark
+            transition-all duration-200 cursor-pointer shadow-gcard-sm hover:shadow-gcard"
+        >
+          <span className="material-symbols-outlined text-base text-gblue-500 group-hover:text-gblue-600 dark:text-gblue-400 transition-colors">
+            terminal
+          </span>
+          <code className="text-xs font-mono font-semibold text-gtext-primary dark:text-gtext-primary-dark">
+            npx skills add ryanbaumann/infographic-agent
+          </code>
+          <span className="material-symbols-outlined text-xs text-gtext-secondary dark:text-gtext-secondary-dark group-hover:text-gblue-500 transition-colors">
+            open_in_new
+          </span>
+        </a>
+      </div>
+
       {/* How it works */}
       <div className="pt-8 border-t border-gborder-light dark:border-gborder-dark">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 sm:gap-6 max-w-3xl mx-auto">

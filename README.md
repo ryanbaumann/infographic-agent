@@ -64,6 +64,30 @@ See [`docs/architecture.md`](docs/architecture.md) for the full technical deep-d
 
 Prefer working from a coding agent instead of the browser? [`skill/infographic-agent/`](skill/infographic-agent/) packages the same idea as a standalone, agent-agnostic **skill** — a `SKILL.md` plus a `portable_infographic.py` script that any AI coding agent with skill/tool support can invoke to generate an infographic PNG directly from the command line, no web app required.
 
+The skill is also published on npm and works with the [Vercel agent skills ecosystem](https://github.com/vercel-labs/skills), so you can run it anywhere with a single command:
+
+**Install into your AI coding agent** (Claude Code, Cursor, Copilot, etc.):
+```bash
+npx skills add ryanbaumann/infographic-agent
+```
+
+**Or run directly without installing** (pulls Python deps on first run):
+```bash
+# First-time setup (installs Python deps + Chromium)
+npx infographic-agent --install
+
+# Generate an infographic
+export GEMINI_API_KEY="your-key"
+npx infographic-agent --text "Top 5 programming languages in 2026" --output infographic.png
+```
+
+Or use a Vertex AI project instead of an API key:
+
+```bash
+export GOOGLE_CLOUD_PROJECT="my-project"
+npx infographic-agent --text "Q2 sales summary" --output sales.png
+```
+
 Here is an example infographic generated using this skill for the prompt *"Top 5 programming languages in 2026"*:
 
 <div align="center">

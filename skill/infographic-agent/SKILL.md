@@ -29,7 +29,15 @@ The entire workflow is encapsulated in `portable_infographic.py`.
 
 <workflow>
 1. **Identify Request:** Confirm the user wants to generate an infographic.
-2. **Setup Environment:** Install the dependencies and browser binary, then set credentials:
+2. **Install Skill:** The easiest way to install this skill into any AI coding agent:
+   ```bash
+   # Via the Vercel agent skills ecosystem (installs into Claude, Cursor, Copilot, etc.)
+   npx skills add ryanbaumann/infographic-agent
+
+   # Or run directly without installing via npm:
+   npx infographic-agent --install   # first-time Python dep setup
+   ```
+3. **Setup Environment:** Install the Python dependencies and browser binary, then set credentials:
    ```bash
    pip install google-genai playwright
    playwright install chromium
@@ -39,8 +47,8 @@ The entire workflow is encapsulated in `portable_infographic.py`.
    # ...or Vertex AI credentials:
    export GOOGLE_CLOUD_PROJECT="your-project"   # optional: GOOGLE_CLOUD_LOCATION (defaults to us-central1)
    ```
-3. **Execute:** Run the portable script to generate the static PNG. A non-zero exit code means generation or rendering failed — check the printed error.
-4. **Deliver Output:** Output the path to the resulting `.png` file.
+4. **Execute:** Run the portable script to generate the static PNG. A non-zero exit code means generation or rendering failed — check the printed error.
+5. **Deliver Output:** Output the path to the resulting `.png` file.
 </workflow>
 
 <instructions>
