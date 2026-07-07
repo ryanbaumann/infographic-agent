@@ -1,0 +1,14 @@
+node_modules
+.git
+.github
+.env
+.env.local
+.env.*.local
+dist
+.claude
+.agents
+.worktrees
+test-results
+playwright-report
+.DS_Store
+Thumbs.db

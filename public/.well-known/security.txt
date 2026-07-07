@@ -1,0 +1,4 @@
+Contact: https://github.com/ryanbaumann/infographic-agent/security/advisories/new
+Expires: 2027-07-01T00:00:00Z
+Preferred-Languages: en
+Policy: https://github.com/ryanbaumann/infographic-agent/blob/main/SECURITY.md

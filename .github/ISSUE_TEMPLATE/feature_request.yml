@@ -1,0 +1,44 @@
+name: Feature Request
+description: Suggest an improvement or new feature
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for suggesting an enhancement! Help us understand your request.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement
+      description: What problem are you trying to solve? Why is this needed?
+      placeholder: |
+        Example: Currently, I can only export as PNG. This limits my ability to...
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: How should this feature work?
+      placeholder: |
+        Example: Add an export to SVG option that preserves text layers
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Are there other ways to solve this?
+      placeholder: |
+        - Convert PNG to SVG after export (workaround but lossy)
+        - Use external tools (cumbersome)
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Screenshots, use cases, or other info
+      placeholder: "Any diagrams or examples?"

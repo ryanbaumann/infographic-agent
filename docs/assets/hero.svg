@@ -1,0 +1,104 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" font-family="'Inter','Segoe UI',Roboto,Helvetica,Arial,sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1E1E1E"/>
+      <stop offset="100%" stop-color="#131314"/>
+    </linearGradient>
+    <linearGradient id="title-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#4285F4"/>
+      <stop offset="55%" stop-color="#EA4335"/>
+      <stop offset="100%" stop-color="#FBBC04"/>
+    </linearGradient>
+    <linearGradient id="card-blue" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4285F4"/>
+      <stop offset="100%" stop-color="#1967D2"/>
+    </linearGradient>
+    <linearGradient id="card-green" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#34A853"/>
+      <stop offset="100%" stop-color="#188038"/>
+    </linearGradient>
+    <linearGradient id="card-yellow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FBBC04"/>
+      <stop offset="100%" stop-color="#F9AB00"/>
+    </linearGradient>
+    <linearGradient id="card-red" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#EA4335"/>
+      <stop offset="100%" stop-color="#C5221F"/>
+    </linearGradient>
+    <filter id="soft-shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="6" stdDeviation="10" flood-color="#000000" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bg)"/>
+
+  <!-- subtle grid dots -->
+  <g opacity="0.06">
+    <circle cx="60" cy="60" r="2" fill="#ffffff"/>
+    <circle cx="1140" cy="60" r="2" fill="#ffffff"/>
+    <circle cx="60" cy="570" r="2" fill="#ffffff"/>
+    <circle cx="1140" cy="570" r="2" fill="#ffffff"/>
+  </g>
+
+  <!-- App icon / logo mark -->
+  <g transform="translate(60,54)">
+    <rect x="0" y="0" width="44" height="44" rx="12" fill="url(#card-blue)"/>
+    <text x="22" y="30" font-size="24" text-anchor="middle" fill="#ffffff">📊</text>
+  </g>
+  <text x="118" y="83" font-size="26" font-weight="700" fill="#E8EAED">Infographic Architect</text>
+
+  <!-- Headline -->
+  <text x="60" y="190" font-size="52" font-weight="800" fill="#E8EAED">Turn any content into</text>
+  <text x="60" y="252" font-size="52" font-weight="800" fill="url(#title-grad)">beautiful infographics</text>
+
+  <!-- Subtitle -->
+  <text x="60" y="298" font-size="20" fill="#9AA0A6">Powered by Gemini — upload files, paste URLs, or describe a topic.</text>
+  <text x="60" y="326" font-size="20" fill="#9AA0A6">Watch the AI agent research, analyze, and design in real time.</text>
+
+  <!-- Get Started pill -->
+  <g transform="translate(60,354)" filter="url(#soft-shadow)">
+    <rect width="176" height="52" rx="26" fill="url(#card-blue)"/>
+    <text x="88" y="33" font-size="18" font-weight="600" fill="#ffffff" text-anchor="middle">Get Started →</text>
+  </g>
+  <g transform="translate(256,354)">
+    <rect width="188" height="52" rx="26" fill="none" stroke="#3C4043" stroke-width="1.5"/>
+    <text x="94" y="33" font-size="18" fill="#E8EAED" text-anchor="middle">✨ Try an Example</text>
+  </g>
+
+  <!-- Mode cards row -->
+  <g transform="translate(60,452)">
+    <!-- Data Story -->
+    <g filter="url(#soft-shadow)">
+      <rect x="0" y="0" width="255" height="120" rx="14" fill="#292A2D" stroke="#3C4043"/>
+      <rect x="20" y="20" width="40" height="40" rx="10" fill="url(#card-blue)"/>
+      <text x="40" y="46" font-size="20" text-anchor="middle" fill="#fff">📈</text>
+      <text x="20" y="92" font-size="17" font-weight="600" fill="#E8EAED">Data Story</text>
+      <text x="20" y="112" font-size="12" fill="#9AA0A6">Turn numbers into narrative</text>
+    </g>
+    <!-- Executive Summary -->
+    <g transform="translate(280,0)" filter="url(#soft-shadow)">
+      <rect x="0" y="0" width="255" height="120" rx="14" fill="#292A2D" stroke="#3C4043"/>
+      <rect x="20" y="20" width="40" height="40" rx="10" fill="url(#card-green)"/>
+      <text x="40" y="46" font-size="20" text-anchor="middle" fill="#fff">💼</text>
+      <text x="20" y="92" font-size="17" font-weight="600" fill="#E8EAED">Executive Summary</text>
+      <text x="20" y="112" font-size="12" fill="#9AA0A6">Boardroom-ready takeaways</text>
+    </g>
+    <!-- Classroom Explainer -->
+    <g transform="translate(560,0)" filter="url(#soft-shadow)">
+      <rect x="0" y="0" width="255" height="120" rx="14" fill="#292A2D" stroke="#3C4043"/>
+      <rect x="20" y="20" width="40" height="40" rx="10" fill="url(#card-yellow)"/>
+      <text x="40" y="46" font-size="20" text-anchor="middle" fill="#fff">🎓</text>
+      <text x="20" y="92" font-size="17" font-weight="600" fill="#E8EAED">Classroom Explainer</text>
+      <text x="20" y="112" font-size="12" fill="#9AA0A6">Teach any concept visually</text>
+    </g>
+    <!-- Technical Deep-Dive -->
+    <g transform="translate(840,0)" filter="url(#soft-shadow)">
+      <rect x="0" y="0" width="255" height="120" rx="14" fill="#292A2D" stroke="#3C4043"/>
+      <rect x="20" y="20" width="40" height="40" rx="10" fill="url(#card-red)"/>
+      <text x="40" y="46" font-size="20" text-anchor="middle" fill="#fff">🔬</text>
+      <text x="20" y="92" font-size="17" font-weight="600" fill="#E8EAED">Technical Deep-Dive</text>
+      <text x="20" y="112" font-size="12" fill="#9AA0A6">Architecture &amp; specs, visualized</text>
+    </g>
+  </g>
+</svg>
