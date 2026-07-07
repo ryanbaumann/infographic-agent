@@ -1,0 +1,134 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="700" viewBox="0 0 1200 700" font-family="'Inter','Segoe UI',Roboto,Helvetica,Arial,sans-serif">
+  <defs>
+    <linearGradient id="bg2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1E1E1E"/>
+      <stop offset="100%" stop-color="#131314"/>
+    </linearGradient>
+    <linearGradient id="blue-btn" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4285F4"/>
+      <stop offset="100%" stop-color="#1967D2"/>
+    </linearGradient>
+    <filter id="shadow2" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#000000" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+
+  <rect width="1200" height="700" fill="url(#bg2)"/>
+
+  <!-- Top bar -->
+  <text x="60" y="55" font-size="22" font-weight="700" fill="#E8EAED">Create</text>
+  <text x="60" y="80" font-size="14" fill="#9AA0A6">Upload files, paste URLs, or describe a topic — then configure your infographic</text>
+
+  <!-- Left column: Upload or Describe -->
+  <g transform="translate(60,110)">
+    <text x="0" y="0" font-size="12" font-weight="600" letter-spacing="1" fill="#9AA0A6">UPLOAD OR DESCRIBE</text>
+
+    <!-- textarea -->
+    <rect x="0" y="16" width="510" height="96" rx="12" fill="#292A2D" stroke="#3C4043"/>
+    <text x="18" y="46" font-size="13" fill="#9AA0A6">Describe what you want to visualize — the AI agent can visit</text>
+    <text x="18" y="66" font-size="13" fill="#9AA0A6">URLs, search Google for research, analyze data, and more...</text>
+    <rect x="410" y="80" width="82" height="24" rx="6" fill="url(#blue-btn)"/>
+    <text x="451" y="96" font-size="11" font-weight="600" fill="#fff" text-anchor="middle">+ Add</text>
+
+    <!-- capability pills -->
+    <g transform="translate(0,128)">
+      <rect x="0" y="0" width="86" height="22" rx="11" fill="#292A2D" stroke="#3C4043"/>
+      <text x="43" y="15" font-size="10" fill="#9AA0A6" text-anchor="middle">🔗 Visit URLs</text>
+      <rect x="94" y="0" width="106" height="22" rx="11" fill="#292A2D" stroke="#3C4043"/>
+      <text x="147" y="15" font-size="10" fill="#9AA0A6" text-anchor="middle">🔍 Google Search</text>
+      <rect x="208" y="0" width="112" height="22" rx="11" fill="#292A2D" stroke="#3C4043"/>
+      <text x="264" y="15" font-size="10" fill="#9AA0A6" text-anchor="middle">📊 Analyze data</text>
+      <rect x="328" y="0" width="98" height="22" rx="11" fill="#292A2D" stroke="#3C4043"/>
+      <text x="377" y="15" font-size="10" fill="#9AA0A6" text-anchor="middle">✨ AI research</text>
+    </g>
+
+    <!-- file list -->
+    <g transform="translate(0,172)">
+      <text x="0" y="0" font-size="11" fill="#9AA0A6">2 files attached</text>
+      <rect x="0" y="12" width="510" height="46" rx="10" fill="#292A2D" stroke="#3C4043"/>
+      <text x="16" y="40" font-size="16" fill="#4285F4">📄</text>
+      <text x="42" y="34" font-size="13" font-weight="500" fill="#E8EAED">quarterly-report.pdf</text>
+      <text x="42" y="50" font-size="11" fill="#9AA0A6">2.1 MB</text>
+      <rect x="0" y="64" width="510" height="46" rx="10" fill="#292A2D" stroke="#3C4043"/>
+      <text x="16" y="92" font-size="16" fill="#4285F4">📈</text>
+      <text x="42" y="86" font-size="13" font-weight="500" fill="#E8EAED">sales-data.csv</text>
+      <text x="42" y="102" font-size="11" fill="#9AA0A6">340 KB</text>
+    </g>
+
+    <!-- try example -->
+    <rect x="0" y="290" width="150" height="34" rx="8" fill="none" stroke="#1A73E8"/>
+    <text x="75" y="311" font-size="12" font-weight="500" fill="#8AB4F8" text-anchor="middle">✨ Try an Example</text>
+  </g>
+
+  <!-- Right column: Configure -->
+  <g transform="translate(630,110)">
+    <text x="0" y="0" font-size="12" font-weight="600" letter-spacing="1" fill="#9AA0A6">MODE</text>
+    <g transform="translate(0,16)">
+      <!-- 2x2 grid of mode cards, first selected -->
+      <rect x="0" y="0" width="245" height="64" rx="12" fill="#12233F" stroke="#4285F4" stroke-width="1.5"/>
+      <text x="16" y="27" font-size="16" fill="#8AB4F8">📈</text>
+      <text x="42" y="26" font-size="13" font-weight="600" fill="#8AB4F8">Data Story</text>
+      <text x="42" y="44" font-size="10" fill="#9AA0A6">Turn numbers into a narrative</text>
+
+      <rect x="257" y="0" width="245" height="64" rx="12" fill="#292A2D" stroke="#3C4043"/>
+      <text x="273" y="27" font-size="16" fill="#9AA0A6">💼</text>
+      <text x="299" y="26" font-size="13" font-weight="500" fill="#E8EAED">Executive Summary</text>
+      <text x="299" y="44" font-size="10" fill="#9AA0A6">Boardroom-ready takeaways</text>
+
+      <rect x="0" y="76" width="245" height="64" rx="12" fill="#292A2D" stroke="#3C4043"/>
+      <text x="16" y="103" font-size="16" fill="#9AA0A6">🎓</text>
+      <text x="42" y="102" font-size="13" font-weight="500" fill="#E8EAED">Classroom Explainer</text>
+      <text x="42" y="120" font-size="10" fill="#9AA0A6">Teach any concept visually</text>
+
+      <rect x="257" y="76" width="245" height="64" rx="12" fill="#292A2D" stroke="#3C4043"/>
+      <text x="273" y="103" font-size="16" fill="#9AA0A6">🔬</text>
+      <text x="299" y="102" font-size="13" font-weight="500" fill="#E8EAED">Technical Deep-Dive</text>
+      <text x="299" y="120" font-size="10" fill="#9AA0A6">Architecture &amp; specs, visualized</text>
+    </g>
+
+    <!-- Aspect ratio -->
+    <text x="0" y="176" font-size="12" font-weight="600" letter-spacing="1" fill="#9AA0A6">ASPECT RATIO</text>
+    <g transform="translate(0,192)">
+      <rect x="0" y="0" width="64" height="34" rx="17" fill="#1967D2"/>
+      <rect x="12" y="9" width="16" height="16" fill="none" stroke="#ffffff"/>
+      <text x="42" y="22" font-size="12" font-weight="600" fill="#fff" text-anchor="middle">1:1</text>
+
+      <rect x="72" y="0" width="72" height="34" rx="17" fill="#292A2D" stroke="#3C4043"/>
+      <rect x="84" y="8" width="14" height="18" fill="none" stroke="#9AA0A6"/>
+      <text x="118" y="22" font-size="12" fill="#E8EAED" text-anchor="middle">3:4</text>
+
+      <rect x="152" y="0" width="72" height="34" rx="17" fill="#292A2D" stroke="#3C4043"/>
+      <rect x="164" y="10" width="18" height="14" fill="none" stroke="#9AA0A6"/>
+      <text x="198" y="22" font-size="12" fill="#E8EAED" text-anchor="middle">4:3</text>
+
+      <rect x="232" y="0" width="76" height="34" rx="17" fill="#292A2D" stroke="#3C4043"/>
+      <rect x="244" y="11" width="20" height="12" fill="none" stroke="#9AA0A6"/>
+      <text x="280" y="22" font-size="12" fill="#E8EAED" text-anchor="middle">16:9</text>
+
+      <rect x="316" y="0" width="76" height="34" rx="17" fill="#292A2D" stroke="#3C4043"/>
+      <rect x="330" y="7" width="12" height="20" fill="none" stroke="#9AA0A6"/>
+      <text x="364" y="22" font-size="12" fill="#E8EAED" text-anchor="middle">9:16</text>
+    </g>
+
+    <!-- Resolution -->
+    <text x="0" y="256" font-size="12" font-weight="600" letter-spacing="1" fill="#9AA0A6">RESOLUTION</text>
+    <g transform="translate(0,272)">
+      <rect x="0" y="0" width="76" height="30" rx="15" fill="#292A2D" stroke="#3C4043"/>
+      <text x="38" y="20" font-size="11" fill="#E8EAED" text-anchor="middle">0.5K</text>
+      <rect x="84" y="0" width="66" height="30" rx="15" fill="#292A2D" stroke="#3C4043"/>
+      <text x="117" y="20" font-size="11" fill="#E8EAED" text-anchor="middle">1K</text>
+      <rect x="158" y="0" width="66" height="30" rx="15" fill="#1967D2"/>
+      <text x="191" y="20" font-size="11" font-weight="600" fill="#fff" text-anchor="middle">2K</text>
+      <rect x="232" y="0" width="66" height="30" rx="15" fill="#292A2D" stroke="#3C4043"/>
+      <text x="265" y="20" font-size="11" fill="#E8EAED" text-anchor="middle">3K</text>
+      <rect x="306" y="0" width="66" height="30" rx="15" fill="#292A2D" stroke="#3C4043"/>
+      <text x="339" y="20" font-size="11" fill="#E8EAED" text-anchor="middle">4K</text>
+    </g>
+
+    <!-- Generate button -->
+    <g transform="translate(0,336)" filter="url(#shadow2)">
+      <rect x="0" y="0" width="510" height="52" rx="26" fill="url(#blue-btn)"/>
+      <text x="255" y="33" font-size="16" font-weight="600" fill="#ffffff" text-anchor="middle">✨ Generate Infographic</text>
+    </g>
+  </g>
+</svg>

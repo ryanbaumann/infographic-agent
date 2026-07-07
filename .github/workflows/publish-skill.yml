@@ -1,0 +1,80 @@
+name: Publish skill to npm
+
+# Automatically publishes the portable skill (skill/infographic-agent) to npm.
+#
+# How it works — "automagic" releases:
+#   1. Bump `version` in skill/infographic-agent/package.json (and update CHANGELOG.md).
+#   2. Merge to main.
+#   3. This workflow runs, sees the new version is not yet on npm, and publishes it.
+#
+# It is safe and idempotent: unrelated edits to the skill (docs, script tweaks)
+# re-run the workflow but publish nothing, because the version already exists on
+# npm. Only a version bump triggers an actual publish. You can also run it
+# manually from the Actions tab (workflow_dispatch) — handy for the very first
+# release once the package lands on main.
+#
+# Required secret: NPM_TOKEN — an npm "Automation" access token with publish
+# rights for the `infographic-agent` package (Settings → Secrets and variables
+# → Actions). Publishes include npm provenance for supply-chain attestation.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'skill/infographic-agent/**'
+  workflow_dispatch:
+
+concurrency:
+  group: publish-skill
+  cancel-in-progress: false
+
+permissions:
+  contents: write # push the release tag
+  id-token: write # npm provenance (OIDC attestation)
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: skill/infographic-agent
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Sanity-check the package
+        run: |
+          node --check bin/infographic-agent.js
+          python3 -m py_compile portable_infographic.py
+          npm pack --dry-run
+
+      - name: Resolve version & publish state
+        id: v
+        run: |
+          VERSION="$(node -p "require('./package.json').version")"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          if npm view "infographic-agent@$VERSION" version >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::infographic-agent@$VERSION is already on npm — nothing to publish."
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::infographic-agent@$VERSION is new — publishing."
+          fi
+
+      - name: Publish to npm
+        if: steps.v.outputs.exists == 'false'
+        run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Tag the release
+        if: steps.v.outputs.exists == 'false'
+        working-directory: .
+        run: |
+          TAG="skill-v${{ steps.v.outputs.version }}"
+          git tag "$TAG"
+          git push origin "$TAG"
