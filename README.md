@@ -62,7 +62,9 @@ See [`docs/architecture.md`](docs/architecture.md) for the full technical deep-d
 
 ## The Portable Skill
 
-Prefer working from a coding agent instead of the browser? [`skill/infographic-agent/`](skill/infographic-agent/) packages the same idea as a standalone, agent-agnostic **skill** — a `SKILL.md` plus a `portable_infographic.py` script that any AI coding agent with skill/tool support can invoke to generate an infographic PNG directly from the command line, no web app required.
+Prefer working from a coding agent instead of the browser? [`skill/infographic-agent/`](skill/infographic-agent/) packages the **same two-agent pipeline** as a standalone, agent-agnostic **skill** — a `SKILL.md` plus a `portable_infographic.py` script that any AI coding agent with skill/tool support can invoke to generate an infographic PNG directly from the command line, no web app required. It uses `gemini-3.5-flash` to research and engineer the prompt, then `gemini-3.1-flash-lite-image` to render it.
+
+**The only dependency is Google's GenAI SDK** — no browser, Playwright, or Chromium download. Install is a single `pip install google-genai`.
 
 The skill is also published on npm and works with the [Vercel agent skills ecosystem](https://github.com/vercel-labs/skills), so you can run it anywhere with a single command:
 
@@ -71,21 +73,30 @@ The skill is also published on npm and works with the [Vercel agent skills ecosy
 npx skills add ryanbaumann/infographic-agent
 ```
 
-**Or run directly without installing** (pulls Python deps on first run):
+**Or run directly without installing:**
 ```bash
-# First-time setup (installs Python deps + Chromium)
+# First-time setup (just: pip install google-genai)
 npx infographic-agent --install
 
-# Generate an infographic
-export GEMINI_API_KEY="your-key"
-npx infographic-agent --text "Top 5 programming languages in 2026" --output infographic.png
+# Generate an infographic — no key set? The CLI walks you through getting a
+# FREE one from Google AI Studio (~20 seconds) and saves it locally.
+npx infographic-agent "Top 5 programming languages in 2026"
 ```
+
+Already have a key? Set it and skip onboarding:
+
+```bash
+export GEMINI_API_KEY="your-key"   # free key: https://aistudio.google.com/apikey
+npx infographic-agent "Q2 sales highlights" -o sales.png -m executive-summary
+```
+
+After the first draft the CLI drops into an interactive **refine loop** — type edits like `make the header bolder` or `use teal accents` and each revision renders in seconds and auto-opens. Pass `--yes` for a one-shot, non-interactive run (ideal for CI or autonomous agents).
 
 Or use a Vertex AI project instead of an API key:
 
 ```bash
 export GOOGLE_CLOUD_PROJECT="my-project"
-npx infographic-agent --text "Q2 sales summary" --output sales.png
+npx infographic-agent "Q2 sales summary" -o sales.png
 ```
 
 Here is an example infographic generated using this skill for the prompt *"Top 5 programming languages in 2026"*:

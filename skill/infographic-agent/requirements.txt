@@ -1,0 +1,3 @@
+# The only runtime dependency — Google's GenAI SDK.
+# Install with:  pip install -r requirements.txt   (or: pip install google-genai)
+google-genai>=1.0.0

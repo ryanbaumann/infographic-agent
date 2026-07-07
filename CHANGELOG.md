@@ -7,9 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Portable skill rewritten to match the web pipeline (`infographic-agent` v3.0.0)**: the skill now generates infographics **directly with Gemini** using the same two agents as the web demo — a research orchestrator (`gemini-3.5-flash`) grounds the topic with Google Search and engineers a text-accurate prompt, then `gemini-3.1-flash-lite-image` renders the PNG. Replaces the previous HTML/CSS + headless-Chromium screenshot approach.
+- **No browser dependencies**: removed Playwright/Chromium from the skill entirely. The only runtime dependency is Google's GenAI SDK — `npx infographic-agent --install` now just runs `pip install google-genai` (seconds, not a browser download).
+
 ### Added
 
-- **npx CLI for portable skill**: `skill/infographic-agent/` is now an npm package (`infographic-agent`). Install dependencies with `npx infographic-agent --install`, then generate infographics from any machine with `npx infographic-agent --text "..." --output out.png`. Supports both `GEMINI_API_KEY` and Vertex AI (`GOOGLE_CLOUD_PROJECT`) credentials.
+- **npx CLI for the portable skill**: `skill/infographic-agent/` is published on npm as `infographic-agent`. Install with `npx infographic-agent --install`, then generate from any machine with `npx infographic-agent "..."`. Supports both `GEMINI_API_KEY` and Vertex AI (`GOOGLE_CLOUD_PROJECT`) credentials.
+- **One-click API-key onboarding**: if no `GEMINI_API_KEY` is set, the CLI walks the user through getting a **free** key from Google AI Studio — offering to open the page, then saving the pasted key to `~/.config/infographic-agent/config.json` (`0600` perms) for next time. Also available via `infographic-agent --setup`.
+- **Interactive refine loop**: after the first draft, iterate with plain-language edits (`make the header bolder`, `use teal accents`); each revision renders in seconds, saves as `-v2`/`-v3`, and auto-opens. Pass `--yes` for a one-shot non-interactive run.
+- **Style controls**: `--mode` (data-story, executive-summary, technical-deep-dive, classroom, quick-slide, custom), `--aspect`, `--instructions`, and `--no-research` (skip grounding for a faster direct render).
+
+### Security
+
+- Gemini API keys stay user-provided and local; the skill's saved config file is written with `0600` permissions and API errors are scrubbed of anything resembling a credential before printing.
 
 ## [2.0.2] - 2026-07-07
 

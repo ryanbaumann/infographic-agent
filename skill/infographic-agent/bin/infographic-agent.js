@@ -3,17 +3,19 @@
  * infographic-agent CLI
  *
  * Thin Node.js shim that delegates to `portable_infographic.py`, which is
- * bundled in this npm package.  Node is only used here because npm/npx needs
- * a JS entry-point; all the heavy lifting (Gemini API + headless Chromium
- * screenshot) lives in the Python script.
+ * bundled in this npm package. Node is only used here because npm/npx needs a
+ * JS entry-point; all the heavy lifting (the two Gemini agents that research
+ * and render the infographic) lives in the Python script.
+ *
+ * The ONLY runtime dependency is Google's GenAI SDK — there is no browser,
+ * Playwright, or Chromium download.
  *
  * Usage (via npx):
- *   npx infographic-agent --text "Top 5 programming languages in 2026" --output infographic.png
+ *   npx infographic-agent "Top 5 programming languages in 2026"
  *
- * Prerequisites (auto-checked and reported below):
- *   pip install google-genai playwright
- *   playwright install chromium
- *   export GEMINI_API_KEY="your-key"
+ * First-time setup:
+ *   npx infographic-agent --install   # pip install google-genai
+ *   # then just run it — the CLI walks you through getting a free API key.
  */
 
 import { spawnSync } from "node:child_process";
@@ -72,7 +74,7 @@ const python = findPython();
 // ─── CLI args ────────────────────────────────────────────────────────────────
 
 const args = process.argv.slice(2);
-const showHelp = args.length === 0 || args.includes("--help") || args.includes("-h");
+const showHelp = args.includes("--help") || args.includes("-h");
 const doInstall = args.includes("--install");
 
 // ─── --help ──────────────────────────────────────────────────────────────────
@@ -81,28 +83,35 @@ if (showHelp) {
   print(`
 infographic-agent v${pkg.version}
 
-Generate a professional infographic PNG from text using Gemini + headless Chromium.
+Generate a professional infographic PNG directly with Gemini — a research
+agent (gemini-3.5-flash) grounds your topic, then the image model
+(gemini-3.1-flash-lite-image) renders it. No browser or Playwright needed.
 
 Usage:
-  npx infographic-agent [options]
+  npx infographic-agent "<topic>" [options]
 
 Options:
-  --text <string>      Content to visualize (required)
-  --output <path>      Output PNG path (default: infographic.png)
-  --install            Install Python dependencies and Chromium browser
-  --help, -h           Show this help message
+  --text <string>        Content to visualize (alternative to the positional topic)
+  --output, -o <path>    Output PNG path (default: infographic.png)
+  --mode, -m <mode>      data-story | executive-summary | technical-deep-dive |
+                         classroom | quick-slide | custom  (default: data-story)
+  --aspect, -a <ratio>   1:1 | 9:16 | 16:9 | 3:4 | 4:3 | 1:4  (default: 9:16)
+  --instructions, -i     Extra styling / content instructions
+  --no-research          Skip the research agent; generate straight from your text
+  --no-open              Do not auto-open the result
+  --yes, -y              Non-interactive: generate once and exit (no refine loop)
+  --setup                (Re)configure your free Gemini API key and exit
+  --install              Install the Python dependency (google-genai)
+  --help, -h             Show this help message
 
-Environment:
-  GEMINI_API_KEY          Gemini API key  (get one at https://aistudio.google.com/apikey)
-  GOOGLE_CLOUD_PROJECT    Vertex AI project ID (alternative to GEMINI_API_KEY)
-  GOOGLE_CLOUD_LOCATION   Vertex AI region (default: us-central1)
-
-First-time setup:
+Getting started (a free key takes ~20 seconds):
   npx infographic-agent --install
+  npx infographic-agent "Top 5 programming languages in 2026"
+  # → the CLI walks you through grabbing a free key from Google AI Studio.
 
 Examples:
-  npx infographic-agent --text "Top 5 programming languages in 2026" --output infographic.png
-  npx infographic-agent --text "$(cat report.txt)" --output summary.png
+  npx infographic-agent "Q2 sales highlights" -o sales.png -m executive-summary
+  npx infographic-agent --text "$(cat report.txt)" -a 16:9
 `.trim());
   process.exit(0);
 }
@@ -119,28 +128,19 @@ if (!python) {
   process.exit(1);
 }
 
-// ─── --install: first-time dependency setup ───────────────────────────────────
+// ─── --install: first-time dependency setup (just the GenAI SDK) ─────────────
 
 if (doInstall) {
-  print("Installing Python dependencies (google-genai, playwright)...");
-  let result = run(python, ["-m", "pip", "install", "google-genai", "playwright"]);
-  if (result.status !== 0) process.exit(result.status);
-
-  print("Installing Playwright Chromium browser...");
-  // Try `playwright install chromium` on PATH first, fall back to python -m playwright
-  result = spawnSync("playwright", ["install", "chromium"], { stdio: "inherit" });
-  if (result.status !== 0 || result.error) {
-    result = run(python, ["-m", "playwright", "install", "chromium"]);
-  }
+  print("Installing the Google GenAI SDK (google-genai)...");
+  const result = run(python, ["-m", "pip", "install", "--upgrade", "google-genai"]);
   if (result.status !== 0) process.exit(result.status);
 
   print(`
 ✓ Setup complete!
 
-  Export your Gemini API key and generate your first infographic:
+  Generate your first infographic (the CLI will help you get a free API key):
 
-    export GEMINI_API_KEY=your-key
-    npx infographic-agent --text "Top 5 programming languages in 2026" --output infographic.png
+    npx infographic-agent "Top 5 programming languages in 2026"
 `.trim());
   process.exit(0);
 }
