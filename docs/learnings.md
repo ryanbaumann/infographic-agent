@@ -245,12 +245,11 @@ Each header prevents a specific attack:
 ### Environment Variables
 
 **Build Time**:
-- `VITE_GEMINI_API_KEY` (optional): if set when `npm run build` runs, Vite inlines the key into the bundled `dist/index.html`. Only do this for private/internal deployments — anyone who can load the page can read the key from the HTML.
+- `VITE_GEMINI_API_KEY` (optional): if set when `npm run build` runs, Vite inlines the key into the bundled code. If configured, it acts as a built-in trial key allowing up to 3 generation/refinement turns per user (persisted in browser localStorage). After 3 turns, users are required to supply their own key in the settings panel.
+- *Security Note*: Because the application runs entirely client-side, any inlined trial key is technically inspectable via the browser's developer tools. The 3-turn limit functions as a client-side soft gate to prevent casual abuse, but you should not use a key with high billing limits.
 
 **Runtime**:
 - Users provide their own key via the in-app settings panel; it persists in browser localStorage only.
-
-Do not bake a key into a publicly hosted Docker image; keep public deployments key-less and let each visitor supply their own.
 
 ---
 
