@@ -19,7 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Examples Gallery**: Added a gallery of three generated infographic examples (saved under `/examples`) demonstrating different aspect ratios (`16:9`, `4:3`, `9:16`) and styles (`data-story`, `technical-deep-dive`, `executive-summary`). Embedded the examples in a interactive carousel block in the `README.md`, along with the exact CLI commands and parameters used to generate them.
+- **Examples Gallery**: Added a gallery of three generated infographic examples (saved under `/examples`) demonstrating different aspect ratios (`16:9`, `4:3`, `9:16`) and styles (`data-story`, `technical-deep-dive`, `executive-summary`). Embedded the examples directly in the `README.md`, along with the exact CLI commands and parameters used to generate them.
 - **npx CLI for the portable skill**: `skill/infographic-agent/` is published on npm as `infographic-agent`. Install with `npx infographic-agent --install`, then generate from any machine with `npx infographic-agent "..."`. Supports both `GEMINI_API_KEY` and Vertex AI (`GOOGLE_CLOUD_PROJECT`) credentials.
 - **One-click API-key onboarding**: if no `GEMINI_API_KEY` is set, the CLI walks the user through getting a **free** key from Google AI Studio — offering to open the page, then saving the pasted key to `~/.config/infographic-agent/config.json` (`0600` perms) for next time. Also available via `infographic-agent --setup`.
 - **Interactive refine loop**: after the first draft, iterate with plain-language edits (`make the header bolder`, `use teal accents`); each revision renders in seconds, saves as `-v2`/`-v3`, and auto-opens. Pass `--yes` for a one-shot non-interactive run.

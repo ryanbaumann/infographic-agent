@@ -188,10 +188,10 @@ Here is an example infographic generated using this skill for the prompt *"Top 5
 
 Below is a gallery of sample infographics generated using the portable CLI tool with different aspect ratios and modes.
 
-````carousel
 ### 🤖 Evolution of AI Agents (2020-2026)
 
-**Style Mode:** `data-story` | **Aspect Ratio:** `16:9` (Landscape)
+*   **Style Mode:** `data-story`
+*   **Aspect Ratio:** `16:9` (Landscape)
 
 **CLI Command:**
 ```bash
@@ -204,13 +204,16 @@ python3 skill/infographic-agent/portable_infographic.py \
   --no-open
 ```
 
-![Evolution of AI Agents](examples/ai_agents_evolution.jpg)
+<div align="center">
+  <img src="examples/ai_agents_evolution.jpg" width="600" alt="Evolution of AI Agents" />
+</div>
 
-<!-- slide -->
+---
 
 ### ⚙️ How Infographic Agent Works
 
-**Style Mode:** `technical-deep-dive` | **Aspect Ratio:** `4:3` (Standard Landscape)
+*   **Style Mode:** `technical-deep-dive`
+*   **Aspect Ratio:** `4:3` (Standard Landscape)
 
 **CLI Command:**
 ```bash
@@ -223,13 +226,16 @@ python3 skill/infographic-agent/portable_infographic.py \
   --no-open
 ```
 
-![How Infographic Agent Works](examples/how_it_works.jpg)
+<div align="center">
+  <img src="examples/how_it_works.jpg" width="600" alt="How Infographic Agent Works" />
+</div>
 
-<!-- slide -->
+---
 
 ### 📋 The 3 Hard Rules of Infographics
 
-**Style Mode:** `executive-summary` | **Aspect Ratio:** `9:16` (Tall Portrait)
+*   **Style Mode:** `executive-summary`
+*   **Aspect Ratio:** `9:16` (Tall Portrait)
 
 **CLI Command:**
 ```bash
@@ -242,8 +248,10 @@ python3 skill/infographic-agent/portable_infographic.py \
   --no-open
 ```
 
-![The 3 Hard Rules of Infographics](examples/infographic_rules.jpg)
-````
+<div align="center">
+  <img src="examples/infographic_rules.jpg" width="400" alt="The 3 Hard Rules of Infographics" />
+</div>
+
 
 
 ## Deployment
