@@ -7,10 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Skill output is now true lossless PNG (`infographic-agent` v3.0.1)**: `gemini-3.1-flash-lite-image` returns JPEG on the Gemini Developer API (which does not allow forcing the output format), so the CLI was saving JPEG bytes under a `.png` name — visibly degrading text. The skill now transcodes the model's output to real PNG via Pillow, threads the actual mime type through the refinement loop, and writes the correct file extension. `pip install` / `--install` now include `pillow` (google-genai remains the only hard requirement — without Pillow the script degrades gracefully to the model's native format).
+
 ### Changed
 
 - **Portable skill rewritten to match the web pipeline (`infographic-agent` v3.0.0)**: the skill now generates infographics **directly with Gemini** using the same two agents as the web demo — a research orchestrator (`gemini-3.5-flash`) grounds the topic with Google Search and engineers a text-accurate prompt, then `gemini-3.1-flash-lite-image` renders the PNG. Replaces the previous HTML/CSS + headless-Chromium screenshot approach.
-- **No browser dependencies**: removed Playwright/Chromium from the skill entirely. The only runtime dependency is Google's GenAI SDK — `npx infographic-agent --install` now just runs `pip install google-genai` (seconds, not a browser download).
+- **No browser dependencies**: removed Playwright/Chromium from the skill entirely. `npx infographic-agent --install` now just runs `pip install google-genai pillow` (seconds, not a browser download).
 
 ### Added
 

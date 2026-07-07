@@ -131,8 +131,8 @@ if (!python) {
 // ─── --install: first-time dependency setup (just the GenAI SDK) ─────────────
 
 if (doInstall) {
-  print("Installing the Google GenAI SDK (google-genai)...");
-  const result = run(python, ["-m", "pip", "install", "--upgrade", "google-genai"]);
+  print("Installing Python dependencies (google-genai, pillow)...");
+  const result = run(python, ["-m", "pip", "install", "--upgrade", "google-genai", "pillow"]);
   if (result.status !== 0) process.exit(result.status);
 
   print(`

@@ -10,10 +10,13 @@ exact same two-agent pipeline as the web demo:
   2. Image generator        (gemini-3.1-flash-lite-image) — renders the prompt
      directly into a PNG.
 
-There are NO browser or Playwright dependencies — the only requirement is
-Google's GenAI SDK:
+There are NO browser or Playwright dependencies. Install with:
 
-    pip install google-genai
+    pip install google-genai pillow
+
+(google-genai is required; pillow is used to transcode the model's output to
+lossless PNG for crisp text — the script still runs without it, saving the
+model's native format instead.)
 
 Quick start:
 
@@ -380,16 +383,47 @@ def _parse_json(text: str) -> dict:
 # Agent 2 — image generator (gemini-3.1-flash-lite-image)
 # --------------------------------------------------------------------------- #
 
-def _extract_image(response) -> bytes:
+def _extract_image(response):
+    """Return (image_bytes, mime_type) from a Gemini image response."""
     parts = (response.candidates[0].content.parts if response.candidates else None) or []
     for part in parts:
         inline = getattr(part, "inline_data", None)
         if inline and inline.data:
-            return inline.data
+            return inline.data, (inline.mime_type or "image/png")
     raise RuntimeError("The model did not return an image. Try rephrasing your topic and generate again.")
 
 
-def generate_image(client, prompt: str, aspect: str) -> bytes:
+def _normalize_to_png(data: bytes, mime: str):
+    """Convert the model's output to lossless PNG so text stays crisp.
+
+    The Gemini Developer API returns JPEG for gemini-3.1-flash-lite-image and
+    does not allow forcing the output format, so we transcode here. Pillow keeps
+    the install tiny; if it is somehow missing we fall back to the native bytes
+    (with an honest extension) rather than hard-failing.
+    """
+    m = (mime or "").lower()
+    if m in ("image/png", ""):
+        return data, "image/png"
+    try:
+        import io
+        from PIL import Image
+
+        img = Image.open(io.BytesIO(data))
+        if img.mode not in ("RGB", "RGBA"):
+            img = img.convert("RGB")
+        buf = io.BytesIO()
+        img.save(buf, format="PNG")
+        return buf.getvalue(), "image/png"
+    except ImportError:
+        warn("Pillow not installed — saving the model's native format. "
+             "Run 'pip install pillow' for guaranteed lossless PNG output.")
+        return data, m
+    except Exception as e:  # noqa: BLE001 — never let transcoding lose the image
+        warn(f"Could not transcode to PNG ({type(e).__name__}); saving native format.")
+        return data, m
+
+
+def generate_image(client, prompt: str, aspect: str):
     config = types.GenerateContentConfig(
         response_modalities=["TEXT", "IMAGE"],
         image_config=types.ImageConfig(aspect_ratio=aspect, image_size="1K"),
@@ -403,14 +437,14 @@ def generate_image(client, prompt: str, aspect: str) -> bytes:
     )
 
 
-def refine_image(client, image_bytes: bytes, instruction: str, aspect: str) -> bytes:
+def refine_image(client, image_bytes: bytes, mime: str, instruction: str, aspect: str):
     config = types.GenerateContentConfig(
         response_modalities=["TEXT", "IMAGE"],
         image_config=types.ImageConfig(aspect_ratio=aspect, image_size="1K"),
         http_options=types.HttpOptions(timeout=180_000),
     )
     contents = [
-        types.Part.from_bytes(data=image_bytes, mime_type="image/png"),
+        types.Part.from_bytes(data=image_bytes, mime_type=mime or "image/png"),
         types.Part.from_text(
             text=(
                 "<current_image>The attached image is the current infographic.</current_image>\n"
@@ -421,14 +455,16 @@ def refine_image(client, image_bytes: bytes, instruction: str, aspect: str) -> b
     return _call_image_model(client, contents=contents, config=config)
 
 
-def _call_image_model(client, contents, config) -> bytes:
+def _call_image_model(client, contents, config):
+    """Call the image model with retries; return (png_bytes, mime_type)."""
     last_error = None
     for attempt in range(3):
         try:
             response = client.models.generate_content(
                 model=IMAGE_MODEL, contents=contents, config=config
             )
-            return _extract_image(response)
+            data, mime = _extract_image(response)
+            return _normalize_to_png(data, mime)
         except Exception as e:  # noqa: BLE001
             last_error = e
             if _is_transient(e) and attempt < 2:
@@ -444,10 +480,17 @@ def _call_image_model(client, contents, config) -> bytes:
 # Output handling
 # --------------------------------------------------------------------------- #
 
-def save_png(image_bytes: bytes, output_path: str) -> str:
+_EXT_BY_MIME = {"image/png": ".png", "image/jpeg": ".jpg", "image/jpg": ".jpg", "image/webp": ".webp"}
+_IMAGE_EXTS = {".png", ".jpg", ".jpeg", ".webp", ""}
+
+
+def save_image(image_bytes: bytes, mime: str, output_path: str) -> str:
+    """Write the image, ensuring the extension matches the actual format."""
+    correct_ext = _EXT_BY_MIME.get((mime or "").lower(), ".png")
     path = os.path.realpath(output_path)
-    if not path.lower().endswith(".png"):
-        path += ".png"
+    root, ext = os.path.splitext(path)
+    # Swap a mismatched image extension (or none) for the true one; otherwise append.
+    path = (root + correct_ext) if ext.lower() in _IMAGE_EXTS else (path + correct_ext)
     parent = os.path.dirname(path)
     if parent and not os.path.isdir(parent):
         error(f"Output directory does not exist: {parent}")
@@ -466,12 +509,13 @@ def open_output(path: str) -> None:
 # Interactive refine loop — fast, iterative preview
 # --------------------------------------------------------------------------- #
 
-def refine_loop(client, image_bytes: bytes, output_path: str, aspect: str, auto_open: bool) -> None:
+def refine_loop(client, image_bytes: bytes, mime: str, output_path: str, aspect: str, auto_open: bool) -> None:
     info(
         "\n💬 Refine it, or press Enter to finish.\n"
         '   e.g. "make the header bolder", "use teal accents", "add source citations"'
     )
     revision = 1
+    base, _ = os.path.splitext(output_path)
     while True:
         try:
             instruction = input("\nRefine › ").strip()
@@ -481,13 +525,12 @@ def refine_loop(client, image_bytes: bytes, output_path: str, aspect: str, auto_
         if not instruction or instruction.lower() in ("q", "quit", "exit", "done"):
             break
         try:
-            image_bytes = refine_image(client, image_bytes, instruction, aspect)
+            image_bytes, mime = refine_image(client, image_bytes, mime, instruction, aspect)
         except Exception as e:  # noqa: BLE001
             error(_scrub(str(e)))
             continue
         revision += 1
-        base, ext = os.path.splitext(output_path)
-        rev_path = save_png(image_bytes, f"{base}-v{revision}{ext or '.png'}")
+        rev_path = save_image(image_bytes, mime, f"{base}-v{revision}")
         info(f"✓ Saved revision {revision}: {rev_path}")
         if auto_open:
             open_output(rev_path)
@@ -549,12 +592,12 @@ def main() -> None:
             prompt = direct_prompt(content, args.mode, args.instructions)
         else:
             prompt = research_prompt(client, content, args.mode, args.aspect, args.instructions)
-        image_bytes = generate_image(client, prompt, args.aspect)
+        image_bytes, mime = generate_image(client, prompt, args.aspect)
     except Exception as e:  # noqa: BLE001
         error(_friendly_api_error(e))
         sys.exit(1)
 
-    path = save_png(image_bytes, args.output)
+    path = save_image(image_bytes, mime, args.output)
     info(f"\n✓ Saved infographic: {path}")
 
     auto_open = not args.no_open
@@ -563,7 +606,7 @@ def main() -> None:
 
     interactive = not args.yes and sys.stdin.isatty()
     if interactive:
-        refine_loop(client, image_bytes, path, args.aspect, auto_open)
+        refine_loop(client, image_bytes, mime, path, args.aspect, auto_open)
 
     info("\nDone. 🎉")
 

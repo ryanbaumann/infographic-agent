@@ -64,7 +64,7 @@ See [`docs/architecture.md`](docs/architecture.md) for the full technical deep-d
 
 Prefer working from a coding agent instead of the browser? [`skill/infographic-agent/`](skill/infographic-agent/) packages the **same two-agent pipeline** as a standalone, agent-agnostic **skill** — a `SKILL.md` plus a `portable_infographic.py` script that any AI coding agent with skill/tool support can invoke to generate an infographic PNG directly from the command line, no web app required. It uses `gemini-3.5-flash` to research and engineer the prompt, then `gemini-3.1-flash-lite-image` to render it.
 
-**The only dependency is Google's GenAI SDK** — no browser, Playwright, or Chromium download. Install is a single `pip install google-genai`.
+**No browser, Playwright, or Chromium download** — install is a single `pip install google-genai pillow` (Google's GenAI SDK runs the pipeline; Pillow transcodes the output to lossless PNG for crisp text).
 
 The skill is also published on npm and works with the [Vercel agent skills ecosystem](https://github.com/vercel-labs/skills), so you can run it anywhere with a single command:
 
@@ -75,7 +75,7 @@ npx skills add ryanbaumann/infographic-agent
 
 **Or run directly without installing:**
 ```bash
-# First-time setup (just: pip install google-genai)
+# First-time setup (just: pip install google-genai pillow)
 npx infographic-agent --install
 
 # Generate an infographic — no key set? The CLI walks you through getting a
