@@ -5,9 +5,9 @@ description: >
   A research agent (gemini-3.5-flash) grounds the topic with Google Search and engineers a precise prompt,
   then gemini-3.1-flash-lite-image renders it into a PNG. No browser, Playwright, or Chromium dependencies —
   the only requirement is Google's GenAI SDK. Fully portable to any agent CLI environment.
-compatibility: "Requires Python 3.8+ and the google-genai SDK (one pip install, no browser)."
+compatibility: "Requires Python 3.8+ and the google-genai + pillow packages (one pip install, no browser)."
 metadata:
-  version: "3.0.0"
+  version: "3.0.1"
   author: "Infographic Agent contributors"
 ---
 
@@ -25,7 +25,7 @@ This skill mirrors the repo's web demo as a two-agent pipeline, both powered by 
 
 After the first draft, an interactive refine loop lets the user iterate ("make the header bolder", "use teal accents") — each turn re-invokes the image model with the previous image plus the edit, saving a new revision in seconds.
 
-The entire workflow lives in `portable_infographic.py`. There are **no browser dependencies** — install is a single `pip install google-genai`.
+The entire workflow lives in `portable_infographic.py`. There are **no browser dependencies** — install is a single `pip install google-genai pillow` (google-genai runs the pipeline; pillow transcodes the output to lossless PNG for crisp text).
 
 **Security posture:** the Gemini API key is user-provided. If not set via `GEMINI_API_KEY`, the CLI walks the user through getting a free key from Google AI Studio and stores it locally at `~/.config/infographic-agent/config.json` with `0600` permissions. Errors are scrubbed of anything that looks like a credential before printing. If this skill is invoked autonomously, treat `--output` as trusted input — the path is resolved but will write wherever the invoker points it.
 </context>
@@ -38,7 +38,7 @@ The entire workflow lives in `portable_infographic.py`. There are **no browser d
    npx skills add ryanbaumann/infographic-agent
 
    # Or run directly without installing via npm:
-   npx infographic-agent --install   # first-time: pip install google-genai
+   npx infographic-agent --install   # first-time: pip install google-genai pillow
    ```
 3. **Set up the API key (free, ~20 seconds):** Either export it, or let the CLI onboard you:
    ```bash
