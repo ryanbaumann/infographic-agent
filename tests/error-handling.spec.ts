@@ -73,7 +73,10 @@ test.describe('Error Handling & Recovery', () => {
 
   test('should allow retry after transient error', async ({ page }) => {
     await page.goto('/');
+    // Navigate to the create step first
     await page.getByRole('button', { name: 'Get Started' }).click();
+    // Load sample data so the Generate button becomes enabled
+    await page.getByRole('button', { name: 'Try an Example' }).click();
 
     // Verify generate button is functional
     const generateBtn = page.getByRole('button', { name: 'Generate Infographic' });
@@ -142,17 +145,10 @@ test.describe('Error Handling & Recovery', () => {
     await page.getByRole('button', { name: 'Get Started' }).click();
 
     // Set some configuration
-    const modeButton = page.getByRole('button', { name: /Mode/i }).first();
-    if (await modeButton.isVisible()) {
-      await modeButton.click();
+    const modeButton = page.getByRole('button', { name: 'Data Story' });
+    await modeButton.click();
 
-      const option = page.getByRole('option', { name: /Data Story/ }).first();
-      if (await option.isVisible()) {
-        await option.click();
-
-        // Config should persist
-        await expect(modeButton).toContainText(/Data Story/);
-      }
-    }
+    // Config should persist
+    await expect(modeButton).toHaveClass(/border-gblue-600/);
   });
 });

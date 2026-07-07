@@ -17,36 +17,33 @@ test.describe('Full Infographic Generation Flow', () => {
     await expect(page.getByRole('button', { name: 'Generate Infographic' })).toBeVisible();
 
     // Configure settings
-    await page.getByRole('button', { name: /Mode/i }).first().click();
-    await page.getByRole('option', { name: 'Standard' }).click();
+    await page.getByRole('button', { name: 'Data Story' }).click();
 
     // Verify default config is displayed
     await expect(page.locator('text=Aspect Ratio')).toBeVisible();
-    await expect(page.locator('text=16:9')).toBeVisible();
+    await expect(page.locator('text=Tall Portrait')).toBeVisible();
   });
 
   test('should support data-story generation mode', async ({ page }) => {
     await page.getByRole('button', { name: 'Get Started' }).click();
 
     // Select data-story mode
-    await page.getByRole('button', { name: /Mode/i }).first().click();
-    await page.getByRole('option', { name: 'Data Story' }).click();
+    const modeButton = page.getByRole('button', { name: 'Data Story' });
+    await modeButton.click();
 
     // Verify mode changed
-    const modeButton = page.getByRole('button', { name: /Mode/i }).first();
-    await expect(modeButton).toContainText(/Data Story/);
+    await expect(modeButton).toHaveClass(/border-gblue-600/);
   });
 
   test('should support executive-summary mode', async ({ page }) => {
     await page.getByRole('button', { name: 'Get Started' }).click();
 
     // Select executive-summary mode
-    const modeButtons = page.getByRole('button', { name: /Mode/i });
-    await modeButtons.first().click();
-    await page.getByRole('option', { name: 'Executive Summary' }).click();
+    const modeButton = page.getByRole('button', { name: 'Executive Summary' });
+    await modeButton.click();
 
     // Verify mode changed
-    await expect(modeButtons.first()).toContainText(/Executive Summary/);
+    await expect(modeButton).toHaveClass(/border-gblue-600/);
   });
 
   test('should support different aspect ratios', async ({ page }) => {
@@ -81,7 +78,7 @@ test.describe('Full Infographic Generation Flow', () => {
     const adminButton = page.getByRole('button', { name: /Admin|Settings/i }).first();
     if (await adminButton.isVisible()) {
       await adminButton.click();
-      await expect(page.locator('text=Orchestrator Model')).toBeVisible({ timeout: 2000 });
+      await expect(page.locator('text=Analysis Model')).toBeVisible({ timeout: 2000 });
     }
   });
 
@@ -108,21 +105,15 @@ test.describe('Full Infographic Generation Flow', () => {
   test('should handle custom mode text input', async ({ page }) => {
     await page.getByRole('button', { name: 'Get Started' }).click();
 
-    // Select custom mode if available
-    const modeButton = page.getByRole('button', { name: /Mode/i }).first();
-    await modeButton.click();
+    // Select custom mode
+    const customButton = page.getByRole('button', { name: /Full creative control/ });
+    await customButton.click();
 
-    // Look for custom option
-    const customOption = page.getByRole('option', { name: /Custom/i });
-    if (await customOption.isVisible()) {
-      await customOption.click();
-
-      // Fill in custom text
-      const textInput = page.locator('input[placeholder*="custom"]').first();
-      if (await textInput.isVisible()) {
-        await textInput.fill('My custom style');
-        await expect(textInput).toHaveValue('My custom style');
-      }
+    // Fill in custom text
+    const textInput = page.locator('textarea[placeholder*="custom"]').first();
+    if (await textInput.isVisible()) {
+      await textInput.fill('My custom style');
+      await expect(textInput).toHaveValue('My custom style');
     }
   });
 
@@ -130,6 +121,6 @@ test.describe('Full Infographic Generation Flow', () => {
     await page.getByRole('button', { name: 'Get Started' }).click();
 
     // Verify all main sections exist
-    await expect(page.locator('text=Mode')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Mode' })).toBeVisible();
   });
 });

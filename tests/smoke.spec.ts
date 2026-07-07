@@ -3,6 +3,7 @@ import { test, expect, type Page } from '@playwright/test';
 // Helper to write to localforage IndexedDB
 async function setLocalForageItem(page: Page, key: string, value: unknown) {
   await page.goto('/'); // Navigate first to ensure IndexedDB is allowed
+  await page.waitForLoadState('domcontentloaded');
   await page.evaluate(
     ({ key, value }) => {
       return new Promise<void>((resolve, reject) => {

@@ -692,7 +692,7 @@ export async function generateFilename(prompt: string, adminConfig: AdminConfig)
   return retryWithBackoff(async () => {
     const ai = getAI(adminConfig);
     const response = await ai.models.generateContent({
-      model: 'gemini-3.1-flash-lite',
+      model: 'gemini-3.5-flash',
       contents: `Generate a short, kebab-case filename (max 4-5 words) for an infographic about this topic. Do not include the file extension. Just the kebab-case string suitable for linux. Topic: ${prompt}`,
       config: {
         thinkingConfig: { thinkingLevel: 'MINIMAL', includeThoughts: false },

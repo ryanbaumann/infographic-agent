@@ -64,6 +64,12 @@ See [`docs/architecture.md`](docs/architecture.md) for the full technical deep-d
 
 Prefer working from a coding agent instead of the browser? [`skill/infographic-agent/`](skill/infographic-agent/) packages the same idea as a standalone, agent-agnostic **skill** — a `SKILL.md` plus a `portable_infographic.py` script that any AI coding agent with skill/tool support can invoke to generate an infographic PNG directly from the command line, no web app required.
 
+Here is an example infographic generated using this skill for the prompt *"Top 5 programming languages in 2026"*:
+
+<div align="center">
+  <img src="docs/assets/infographic-example.png" width="400" alt="Generated Infographic Example" />
+</div>
+
 ## Deployment
 
 **Docker:**
