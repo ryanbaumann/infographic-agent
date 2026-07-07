@@ -197,7 +197,7 @@ Below is a gallery of sample infographics generated using the portable CLI tool 
 ```bash
 python3 skill/infographic-agent/portable_infographic.py \
   "Evolution of AI Agents (2020-2026): In 2020, simple APIs were used. In 2022, chain-of-thought emerged. In 2024, multi-agent frameworks took off. By 2026, autonomous coding agents do multi-file editing and verification." \
-  --output examples/ai_agents_evolution.jpg \
+  --output examples/ai_agents_evolution.png \
   --mode data-story \
   --aspect 16:9 \
   --yes \
@@ -205,7 +205,7 @@ python3 skill/infographic-agent/portable_infographic.py \
 ```
 
 <div align="center">
-  <img src="examples/ai_agents_evolution.jpg" width="600" alt="Evolution of AI Agents" />
+  <img src="examples/ai_agents_evolution.png" width="600" alt="Evolution of AI Agents" />
 </div>
 
 ---
@@ -219,7 +219,7 @@ python3 skill/infographic-agent/portable_infographic.py \
 ```bash
 python3 skill/infographic-agent/portable_infographic.py \
   "How Infographic Agent Works: A 2-agent pipeline in Python. Orchestrator model (gemini-3.5-flash) researches and plans, then Lite-Image model (gemini-3.1-flash-lite-image) generates." \
-  --output examples/how_it_works.jpg \
+  --output examples/how_it_works.png \
   --mode technical-deep-dive \
   --aspect 4:3 \
   --yes \
@@ -227,7 +227,7 @@ python3 skill/infographic-agent/portable_infographic.py \
 ```
 
 <div align="center">
-  <img src="examples/how_it_works.jpg" width="600" alt="How Infographic Agent Works" />
+  <img src="examples/how_it_works.png" width="600" alt="How Infographic Agent Works" />
 </div>
 
 ---
@@ -241,7 +241,7 @@ python3 skill/infographic-agent/portable_infographic.py \
 ```bash
 python3 skill/infographic-agent/portable_infographic.py \
   "The 3 Hard Rules of Infographics: 1. Text Accuracy (quote every text string exactly), 2. Data Accuracy (no hallucinations, ground with search), 3. Layout Complexity (use clean cards/dashboards/grids)." \
-  --output examples/infographic_rules.jpg \
+  --output examples/infographic_rules.png \
   --mode executive-summary \
   --aspect 9:16 \
   --yes \
@@ -249,7 +249,7 @@ python3 skill/infographic-agent/portable_infographic.py \
 ```
 
 <div align="center">
-  <img src="examples/infographic_rules.jpg" width="400" alt="The 3 Hard Rules of Infographics" />
+  <img src="examples/infographic_rules.png" width="400" alt="The 3 Hard Rules of Infographics" />
 </div>
 
 
