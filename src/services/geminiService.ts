@@ -75,8 +75,8 @@ let cachedApiKey: string | null = null;
 function getAI(adminConfig: AdminConfig): GoogleGenAI {
   const apiKey = getApiKey(adminConfig);
   if (!apiKey) {
-    if (import.meta.env.VITE_GEMINI_API_KEY && getTrialTurnsCount() >= 3) {
-      throw new Error('Trial limit exceeded (3 turns used). Please configure your own Gemini API key in Settings (gear icon) to continue.');
+    if (import.meta.env.VITE_GEMINI_API_KEY && getTrialTurnsCount() >= 5) {
+      throw new Error('Trial limit exceeded (5 turns used). Please configure your own Gemini API key in Settings (gear icon) to continue.');
     }
     throw new Error('API key is required. Please set your Gemini API key in Settings (gear icon).');
   }
@@ -240,7 +240,7 @@ export function getApiKey(adminConfig: AdminConfig): string {
     // localStorage may not be available
   }
 
-  if (import.meta.env.VITE_GEMINI_API_KEY && getTrialTurnsCount() < 3) {
+  if (import.meta.env.VITE_GEMINI_API_KEY && getTrialTurnsCount() < 5) {
     return import.meta.env.VITE_GEMINI_API_KEY as string;
   }
 
@@ -275,7 +275,7 @@ export function hasApiKey(adminConfig: AdminConfig): boolean {
   } catch {
     // ignore
   }
-  if (import.meta.env.VITE_GEMINI_API_KEY && getTrialTurnsCount() < 3) return true;
+  if (import.meta.env.VITE_GEMINI_API_KEY && getTrialTurnsCount() < 5) return true;
   return false;
 }
 

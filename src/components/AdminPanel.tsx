@@ -98,17 +98,17 @@ export default function AdminPanel({ config, onUpdate, onClose }: AdminPanelProp
           </p>
           {import.meta.env.VITE_GEMINI_API_KEY && !keyIsSet && (
             <div className={`mt-3 p-2.5 rounded-gbtn text-xs border ${
-              getTrialTurnsCount() >= 3
+              getTrialTurnsCount() >= 5
                 ? 'bg-gerror-50 dark:bg-gerror/10 border-gerror/20 text-gerror'
                 : 'bg-gblue-50 dark:bg-gblue-950/20 border-gblue-100 dark:border-gblue-900/30 text-gblue-600 dark:text-gblue-300'
             }`}>
-              {getTrialTurnsCount() >= 3 ? (
+              {getTrialTurnsCount() >= 5 ? (
                 <span>
-                  <span className="font-semibold">Trial Expired:</span> 3/3 turns used. Please save your own API key to continue.
+                  <span className="font-semibold">Trial Expired:</span> 5/5 turns used. Please save your own API key to continue.
                 </span>
               ) : (
                 <span>
-                  <span className="font-semibold">Free Trial:</span> {getTrialTurnsCount()}/3 turns used.
+                  <span className="font-semibold">Free Trial:</span> {getTrialTurnsCount()}/5 turns used.
                 </span>
               )}
             </div>

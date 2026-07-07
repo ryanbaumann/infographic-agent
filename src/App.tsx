@@ -158,6 +158,16 @@ export default function App() {
           >
             GitHub Repository
           </a>
+          <span className="hidden sm:inline">•</span>
+          <a
+            href="https://github.com/ryanbaumann/infographic-agent/tree/main/skill/infographic-agent"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-gblue-600 dark:text-gblue-300 hover:underline inline-flex items-center gap-1"
+            title="Install as a tool into your AI coding agent"
+          >
+            Agent Skill (<code>npx skills add</code>)
+          </a>
         </div>
       </footer>
 

@@ -10,6 +10,16 @@ Upload a PDF, paste a URL, or just describe a topic — a two-agent Gemini pipel
 [![Playwright Tests](https://github.com/ryanbaumann/infographic-agent/actions/workflows/playwright.yml/badge.svg)](https://github.com/ryanbaumann/infographic-agent/actions/workflows/playwright.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
+---
+
+### 🚀 Get Started Immediately
+
+| **Web App** (In the Browser) | **Portable Skill** (In the Terminal / Coding Agent) |
+| :--- | :--- |
+| [Try the Live Demo](https://infographic-agent-gajikud3na-uc.a.run.app) | `npx skills add ryanbaumann/infographic-agent` *(Install into Agent)*<br>`npx infographic-agent "your topic"` *(Run directly)* |
+
+---
+
 </div>
 
 ## Features
@@ -62,7 +72,7 @@ See [`docs/architecture.md`](docs/architecture.md) for the full technical deep-d
 
 ## The Portable Skill
 
-Prefer working from a coding agent instead of the browser? [`skill/infographic-agent/`](skill/infographic-agent/) packages the **same two-agent pipeline** as a standalone, agent-agnostic **skill** — a `SKILL.md` plus a `portable_infographic.py` script that any AI coding agent with skill/tool support can invoke to generate an infographic PNG directly from the command line, no web app required. It uses `gemini-3.5-flash` to research and engineer the prompt, then `gemini-3.1-flash-lite-image` to render it.
+Prefer working from a coding agent instead of the browser? The [`skill/infographic-agent/`](file:///Users/ryanbaumann/projects/infographic-agent/skill/infographic-agent/) directory packages the **same two-agent pipeline** as a standalone, agent-agnostic **skill** — a [`SKILL.md`](file:///Users/ryanbaumann/projects/infographic-agent/skill/infographic-agent/SKILL.md) configuration plus a [`portable_infographic.py`](file:///Users/ryanbaumann/projects/infographic-agent/skill/infographic-agent/portable_infographic.py) script. Any AI coding agent with skill/tool support can invoke this to generate an infographic PNG directly from the command line, no web app required. It uses `gemini-3.5-flash` to research and engineer the prompt, then `gemini-3.1-flash-lite-image` to render it.
 
 **No browser, Playwright, or Chromium download** — install is a single `pip install google-genai pillow` (Google's GenAI SDK runs the pipeline; Pillow transcodes the output to lossless PNG for crisp text).
 
@@ -73,31 +83,100 @@ The skill is also published on npm and works with the [Vercel agent skills ecosy
 npx skills add ryanbaumann/infographic-agent
 ```
 
-**Or run directly without installing:**
+### Installation & Setup
+
+Before running the CLI tool for the first time, you must install the required Python dependencies (`google-genai` and `pillow`). You can do this automatically via `npx` or manually with `pip`:
+
 ```bash
-# First-time setup (just: pip install google-genai pillow)
+# Automated install via npx (Node.js required)
 npx infographic-agent --install
 
-# Generate an infographic — no key set? The CLI walks you through getting a
-# FREE one from Google AI Studio (~20 seconds) and saves it locally.
+# Manual install via pip
+pip install google-genai pillow
+```
+
+### CLI Flags & Options
+
+The CLI options and flags are shared between the `npx infographic-agent` command and the direct Python script invocation (`python3 skill/infographic-agent/portable_infographic.py`).
+
+| Flag / Option | Short | Description | Default / Choices |
+| :--- | :--- | :--- | :--- |
+| `topic` | *None* | **Positional argument**. The topic, prompt, or content you want to visualize. | *None* |
+| `--text` | *None* | Alternative to the positional `topic` argument (useful for piping or long multiline content). | *None* |
+| `--output` | `-o` | File path where the output PNG will be saved. | `infographic.png` |
+| `--mode` | `-m` | Preset layout and style theme for the infographic. | `data-story`<br>Choices: `classroom`, `custom`, `data-story`, `executive-summary`, `quick-slide`, `technical-deep-dive` |
+| `--aspect` | `-a` | Aspect ratio of the generated infographic image. | `9:16`<br>Choices: `1:1`, `1:4`, `3:4`, `4:3`, `9:16`, `16:9` |
+| `--instructions` | `-i` | Custom layout, design, or style rules (e.g. brand hex colors, font preferences). | `""` |
+| `--no-research` | *None* | Skip the research agent and generate directly from your text (faster, doesn't use Google Search). | *Flag* |
+| `--no-open` | *None* | Do not auto-open the generated infographic image in the default system viewer. | *Flag* |
+| `--yes` | `-y` | Non-interactive execution. Generates once and exits immediately without entering the refine loop. | *Flag* (best for CI or autonomous agents) |
+| `--setup` | *None* | Launch the interactive key onboarding walkthrough to configure your Gemini API key, then exit. | *Flag* |
+| `--install` | *None* | Installs Python packages `google-genai` and `pillow`. | *Flag* (supported only via npm wrapper) |
+| `--help` | `-h` | Display the CLI help documentation and exit. | *Flag* |
+
+#### Infographic Modes Description
+*   **`data-story`**: Data-forward layout with charts, graphs, statistical callouts, trend lines, and percentage highlights.
+*   **`executive-summary`**: Clean and minimal. Large headline numbers, 3-5 key takeaways, strategic insights, board-ready aesthetics.
+*   **`technical-deep-dive`**: Dense and precise. Architecture diagrams, code snippets in monospace, system-flow arrows, technical terminology.
+*   **`classroom`**: Friendly and illustrative. Numbered steps, visual analogies, approachable language, warm colors.
+*   **`quick-slide`**: Single-slide format with minimal text, high visual impact, presentation-ready large typography.
+*   **`custom`**: Fully custom layout tailored directly by your additional instructions.
+
+### Environment Variables
+
+If an API key is not configured, the CLI will guide you through an interactive setup and store the key in `~/.config/infographic-agent/config.json`. Alternatively, you can use the following environment variables:
+
+| Variable | Description |
+| :--- | :--- |
+| `GEMINI_API_KEY` | Your Gemini API key. Get a free one at [Google AI Studio](https://aistudio.google.com/apikey). |
+| `GOOGLE_API_KEY` | Alternative environment variable for the Gemini API key. |
+| `GOOGLE_CLOUD_PROJECT` | Setting this activates Vertex AI mode (use in Google Cloud environments instead of an API key). |
+| `GOOGLE_CLOUD_LOCATION` | Vertex AI region/location (default: `us-central1`). |
+| `XDG_CONFIG_HOME` | Custom configuration directory path (defaults to `~/.config`). |
+
+### Usage Examples
+
+#### 1. Basic Generation with Onboarding
+If no key is configured in your environment or saved config, this command opens a browser tab for you to grab a free key from Google AI Studio, saves it locally, and generates the infographic.
+```bash
 npx infographic-agent "Top 5 programming languages in 2026"
 ```
 
-Already have a key? Set it and skip onboarding:
-
+#### 2. One-shot Generation (For CI / Coding Agents)
+Using `--yes` runs the generator end-to-end and exits. This prevents the CLI from blocking on the interactive refinement loop, which is ideal for automation.
 ```bash
-export GEMINI_API_KEY="your-key"   # free key: https://aistudio.google.com/apikey
-npx infographic-agent "Q2 sales highlights" -o sales.png -m executive-summary
+export GEMINI_API_KEY="your-key"
+npx infographic-agent "Q2 sales highlights" -o sales.png -m executive-summary --yes
 ```
 
-After the first draft the CLI drops into an interactive **refine loop** — type edits like `make the header bolder` or `use teal accents` and each revision renders in seconds and auto-opens. Pass `--yes` for a one-shot, non-interactive run (ideal for CI or autonomous agents).
-
-Or use a Vertex AI project instead of an API key:
-
+#### 3. Customizing Layout & Aspect Ratio
+Generate a landscape (16:9) technical diagram with custom color preferences:
 ```bash
-export GOOGLE_CLOUD_PROJECT="my-project"
-npx infographic-agent "Q2 sales summary" -o sales.png
+npx infographic-agent "Microservices Architecture" \
+  --output arch.png \
+  --mode technical-deep-dive \
+  --aspect 16:9 \
+  --instructions "Use a cool dark color scheme with dark blue, teal, and slate gray"
 ```
+
+#### 4. Inline Text / Piped Input
+Pass long or dynamically generated text directly:
+```bash
+# Using --text argument
+npx infographic-agent --text "$(cat release_notes.txt)" -o release.png
+
+# Direct python script execution
+python3 skill/infographic-agent/portable_infographic.py --text "$(cat release_notes.txt)"
+```
+
+#### 5. Interactive Refinement
+If you run without `--yes` (in an interactive terminal), you will enter a live **refine loop** after the first draft is created. You can iteratively tweak the design by typing comments:
+```bash
+Refine › make the header bolder
+Refine › use teal accents
+Refine › exit
+```
+Each iteration will save a new version (`infographic-v2.png`, `infographic-v3.png`, etc.) and automatically open it for preview.
 
 Here is an example infographic generated using this skill for the prompt *"Top 5 programming languages in 2026"*:
 

@@ -138,7 +138,7 @@ export default function StepCreate({
               <span className="material-symbols-outlined text-2xl">auto_awesome</span>
             </div>
             <div>
-              <h4 className="text-base font-bold text-gtext-primary dark:text-gtext-primary-dark">Trial limit reached (3 turns used)</h4>
+              <h4 className="text-base font-bold text-gtext-primary dark:text-gtext-primary-dark">Trial limit reached (5 turns used)</h4>
               <p className="text-sm text-gtext-secondary dark:text-gtext-secondary-dark mt-1 max-w-xl">
                 We hope you enjoyed creating infographics! To continue generating and refining, please configure your own Gemini API key. It's completely free to get from Google AI Studio.
               </p>

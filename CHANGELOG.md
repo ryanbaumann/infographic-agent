@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Bumped free trial turn limit**: Increased the default trial turn limit from 3 to 5 to give users more free generations before requiring their own Gemini API key.
 - **Portable skill rewritten to match the web pipeline (`infographic-agent` v3.0.0)**: the skill now generates infographics **directly with Gemini** using the same two agents as the web demo — a research orchestrator (`gemini-3.5-flash`) grounds the topic with Google Search and engineers a text-accurate prompt, then `gemini-3.1-flash-lite-image` renders the PNG. Replaces the previous HTML/CSS + headless-Chromium screenshot approach.
 - **No browser dependencies**: removed Playwright/Chromium from the skill entirely. `npx infographic-agent --install` now just runs `pip install google-genai pillow` (seconds, not a browser download).
 
