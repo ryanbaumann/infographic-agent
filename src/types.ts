@@ -1,6 +1,9 @@
 // === Step Types ===
 export type StepType = 'hero' | 'create' | 'studio';
 export type GenerationPhase = 'idle' | 'preparing' | 'generating' | 'complete';
+export type AgentLoopPhaseId = 'intake' | 'research' | 'plan' | 'render' | 'review' | 'refine';
+export type AgentLoopPhaseStatus = 'pending' | 'active' | 'complete';
+export type AgentLoopStateBackend = 'browser-local' | 'enterprise-interactions-ready';
 
 // === Infographic Mode Types ===
 export type InfographicMode =
@@ -11,7 +14,7 @@ export type InfographicMode =
   | 'quick-slide'
   | 'custom';
 export type AspectRatio = '1:1' | '9:16' | '16:9' | '3:4' | '4:3' | '1:4';
-export type ImageResolution = '0.5K' | '1K' | '2K' | '3K' | '4K';
+export type ImageResolution = '0.5K' | '1K' | '2K';
 
 // === File Types ===
 export type FileCategory = 'document' | 'spreadsheet' | 'image' | 'text';
@@ -60,6 +63,26 @@ export interface ChatMessage {
   role: 'user' | 'assistant';
   text: string;
   timestamp: number;
+}
+
+// === Agent Loop State ===
+export interface AgentLoopPhase {
+  id: AgentLoopPhaseId;
+  label: string;
+  status: AgentLoopPhaseStatus;
+  detail: string;
+}
+
+export interface AgentLoopState {
+  sessionId: string;
+  turn: number;
+  goal: string;
+  stopRule: string;
+  stateBackend: AgentLoopStateBackend;
+  hitlStatus: 'awaiting-input' | 'running' | 'not-started';
+  interactionId?: string;
+  previousInteractionId?: string;
+  phases: AgentLoopPhase[];
 }
 
 // === Configuration ===
@@ -118,6 +141,7 @@ export interface AppState {
   chatMessages: ChatMessage[];
   refineThoughts: ThoughtBubble[];
   isProcessingFiles: boolean;
+  agentLoop: AgentLoopState;
 }
 
 export interface HistoryEntry {

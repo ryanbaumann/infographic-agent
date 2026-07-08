@@ -52,11 +52,13 @@ except ImportError:
     sys.exit(1)
 
 # --------------------------------------------------------------------------- #
-# Constants — keep these model IDs in lockstep with the web demo (src/types.ts)
+# Constants — keep the default model IDs in lockstep with the web demo (src/types.ts)
 # --------------------------------------------------------------------------- #
 
 ORCHESTRATOR_MODEL = "gemini-3.5-flash"          # research + prompt engineering
 IMAGE_MODEL = "gemini-3.1-flash-lite-image"      # direct infographic rendering
+QUALITY_IMAGE_MODEL = "gemini-3.1-flash-image"   # skill-only quality option
+SUPPORTED_IMAGE_MODELS = (IMAGE_MODEL, QUALITY_IMAGE_MODEL)
 
 AISTUDIO_KEY_URL = "https://aistudio.google.com/apikey"
 CONFIG_DIR = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config")) / "infographic-agent"
@@ -423,21 +425,22 @@ def _normalize_to_png(data: bytes, mime: str):
         return data, m
 
 
-def generate_image(client, prompt: str, aspect: str):
+def generate_image(client, prompt: str, aspect: str, image_model: str):
     config = types.GenerateContentConfig(
         response_modalities=["TEXT", "IMAGE"],
         image_config=types.ImageConfig(aspect_ratio=aspect, image_size="1K"),
         http_options=types.HttpOptions(timeout=180_000),
     )
-    info("🎨 Generating the infographic (gemini-3.1-flash-lite-image)...")
+    info(f"🎨 Generating the infographic ({image_model})...")
     return _call_image_model(
         client,
         contents=[f"{prompt}\n\n{IMAGE_SYSTEM_PROMPT}"],
         config=config,
+        image_model=image_model,
     )
 
 
-def refine_image(client, image_bytes: bytes, mime: str, instruction: str, aspect: str):
+def refine_image(client, image_bytes: bytes, mime: str, instruction: str, aspect: str, image_model: str):
     config = types.GenerateContentConfig(
         response_modalities=["TEXT", "IMAGE"],
         image_config=types.ImageConfig(aspect_ratio=aspect, image_size="1K"),
@@ -452,16 +455,16 @@ def refine_image(client, image_bytes: bytes, mime: str, instruction: str, aspect
             )
         ),
     ]
-    return _call_image_model(client, contents=contents, config=config)
+    return _call_image_model(client, contents=contents, config=config, image_model=image_model)
 
 
-def _call_image_model(client, contents, config):
+def _call_image_model(client, contents, config, image_model: str):
     """Call the image model with retries; return (png_bytes, mime_type)."""
     last_error = None
     for attempt in range(3):
         try:
             response = client.models.generate_content(
-                model=IMAGE_MODEL, contents=contents, config=config
+                model=image_model, contents=contents, config=config
             )
             data, mime = _extract_image(response)
             return _normalize_to_png(data, mime)
@@ -509,7 +512,7 @@ def open_output(path: str) -> None:
 # Interactive refine loop — fast, iterative preview
 # --------------------------------------------------------------------------- #
 
-def refine_loop(client, image_bytes: bytes, mime: str, output_path: str, aspect: str, auto_open: bool) -> None:
+def refine_loop(client, image_bytes: bytes, mime: str, output_path: str, aspect: str, auto_open: bool, image_model: str) -> None:
     info(
         "\n💬 Refine it, or press Enter to finish.\n"
         '   e.g. "make the header bolder", "use teal accents", "add source citations"'
@@ -525,7 +528,7 @@ def refine_loop(client, image_bytes: bytes, mime: str, output_path: str, aspect:
         if not instruction or instruction.lower() in ("q", "quit", "exit", "done"):
             break
         try:
-            image_bytes, mime = refine_image(client, image_bytes, mime, instruction, aspect)
+            image_bytes, mime = refine_image(client, image_bytes, mime, instruction, aspect, image_model)
         except Exception as e:  # noqa: BLE001
             error(_scrub(str(e)))
             continue
@@ -554,6 +557,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--aspect", "-a", default="9:16", choices=sorted(SUPPORTED_ASPECTS),
                         help="Aspect ratio (default: 9:16)")
     parser.add_argument("--instructions", "-i", default="", help="Extra styling / content instructions")
+    parser.add_argument("--image-model", default=IMAGE_MODEL, choices=SUPPORTED_IMAGE_MODELS,
+                        help="Image model for the portable skill (default: gemini-3.1-flash-lite-image)")
     parser.add_argument("--no-research", action="store_true",
                         help="Skip the research agent and generate directly from your text")
     parser.add_argument("--no-open", action="store_true", help="Do not auto-open the result")
@@ -592,7 +597,7 @@ def main() -> None:
             prompt = direct_prompt(content, args.mode, args.instructions)
         else:
             prompt = research_prompt(client, content, args.mode, args.aspect, args.instructions)
-        image_bytes, mime = generate_image(client, prompt, args.aspect)
+        image_bytes, mime = generate_image(client, prompt, args.aspect, args.image_model)
     except Exception as e:  # noqa: BLE001
         error(_friendly_api_error(e))
         sys.exit(1)
@@ -606,7 +611,7 @@ def main() -> None:
 
     interactive = not args.yes and sys.stdin.isatty()
     if interactive:
-        refine_loop(client, image_bytes, mime, path, args.aspect, auto_open)
+        refine_loop(client, image_bytes, mime, path, args.aspect, auto_open, args.image_model)
 
     info("\nDone. 🎉")
 

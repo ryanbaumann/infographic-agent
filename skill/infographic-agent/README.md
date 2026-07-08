@@ -40,7 +40,7 @@ npx infographic-agent "Top 5 programming languages in 2026"
 The skill runs a fast, browser-less two-agent pipeline powered by Gemini:
 
 1. **Research & Plan (`gemini-3.5-flash`)**: Grounds the topic with Google Search and engineers a precise, text-accurate prompt.
-2. **Render (`gemini-3.1-flash-lite-image`)**: Renders the prompt directly into a high-quality, text-accurate infographic PNG.
+2. **Render (`gemini-3.1-flash-lite-image` by default)**: Renders the prompt directly into a high-quality, text-accurate infographic PNG. The portable skill can opt into `gemini-3.1-flash-image` via `--image-model` for quality-focused runs.
 
 ## 🛠️ CLI Flags & Options
 
@@ -53,6 +53,7 @@ All flags are fully compatible between the Python script and the `npx` execution
 | `--mode` | `-m` | Preset layout and style theme. | `data-story`<br>Choices: `classroom`, `custom`, `data-story`, `executive-summary`, `quick-slide`, `technical-deep-dive` |
 | `--aspect` | `-a` | Aspect ratio of the generated infographic image. | `9:16`<br>Choices: `1:1`, `1:4`, `3:4`, `4:3`, `9:16`, `16:9` |
 | `--instructions` | `-i` | Custom layout, design, or brand color rules. | `""` |
+| `--image-model` | *None* | Image model for the portable skill. | `gemini-3.1-flash-lite-image`<br>Choices: `gemini-3.1-flash-lite-image`, `gemini-3.1-flash-image` |
 | `--no-research` | *None* | Skip the research agent and generate directly (faster, no web search). | *Flag* |
 | `--yes` | `-y` | Non-interactive execution (no refine loop, best for CI/agents). | *Flag* |
 | `--setup` | *None* | Launch the interactive key onboarding walkthrough, then exit. | *Flag* |

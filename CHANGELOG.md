@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Web model and resolution controls locked**: the web app now always uses `gemini-3.5-flash` for research/planning and `gemini-3.1-flash-lite-image` for image generation/refinement, including stale localStorage migrations. Web resolution choices are limited to 0.5K, 1K, and 2K.
+- **Portable skill quality model option**: the CLI skill keeps `gemini-3.1-flash-lite-image` as its default image model and adds a skill-only `--image-model gemini-3.1-flash-image` option for quality-focused runs.
+- **Agent loop UX surfaced in Studio**: the generation and refinement flows now expose the bounded loop state (research, plan, render, review, refine), turn count, HITL review status, and stop rule instead of only showing a generic thinking/refining state.
 - **Bumped free trial turn limit**: Increased the default trial turn limit from 3 to 5 to give users more free generations before requiring their own Gemini API key.
 - **Portable skill rewritten to match the web pipeline (`infographic-agent` v3.0.0)**: the skill now generates infographics **directly with Gemini** using the same two agents as the web demo — a research orchestrator (`gemini-3.5-flash`) grounds the topic with Google Search and engineers a text-accurate prompt, then `gemini-3.1-flash-lite-image` renders the PNG. Replaces the previous HTML/CSS + headless-Chromium screenshot approach.
 - **No browser dependencies**: removed Playwright/Chromium from the skill entirely. `npx infographic-agent --install` now just runs `pip install google-genai pillow` (seconds, not a browser download).

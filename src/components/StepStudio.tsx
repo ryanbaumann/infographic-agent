@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import type { GenerationPhase, PrepareResult, GenerationResult, HistoryEntry, ThoughtBubble, ChatMessage, InfographicMode, ImageResolution, AspectRatio } from '../types';
+import type { GenerationPhase, PrepareResult, GenerationResult, HistoryEntry, ThoughtBubble, ChatMessage, InfographicMode, ImageResolution, AspectRatio, AgentLoopState } from '../types';
 import { useBlobUrl } from '../hooks/useBlobUrl';
 import BeforeAfterSlider from './BeforeAfterSlider';
 import ThoughtStream from './ThoughtStream';
@@ -20,6 +20,7 @@ interface StepStudioProps {
   thoughtBubbles: ThoughtBubble[];
   chatMessages: ChatMessage[];
   refineThoughts: ThoughtBubble[];
+  agentLoop: AgentLoopState;
   mode: InfographicMode;
   aspectRatio: AspectRatio;
   onClearError: () => void;
@@ -41,6 +42,7 @@ export default function StepStudio({
   thoughtBubbles,
   chatMessages,
   refineThoughts,
+  agentLoop,
   mode,
   aspectRatio,
   onClearError,
@@ -133,6 +135,7 @@ export default function StepStudio({
             phase={phase}
             elapsed={elapsed}
             prepareResult={prepareResult}
+            agentLoop={agentLoop}
           />
           <div className="w-full lg:w-3/4 flex items-center justify-center">
             {currentImageUrl ? (
@@ -174,7 +177,7 @@ export default function StepStudio({
         )}
         {error && <ErrorBanner error={error} onDismiss={onClearError} onOpenSettings={onOpenSettings} />}
         <div className="flex flex-col-reverse lg:flex-row gap-6">
-          <ChatPanel messages={chatMessages} mode={mode} onSendMessage={handleRefineFromChat} isRefining={isRefining} refineThoughts={refineThoughts} />
+          <ChatPanel messages={chatMessages} mode={mode} onSendMessage={handleRefineFromChat} isRefining={isRefining} refineThoughts={refineThoughts} agentLoop={agentLoop} />
           <div className="flex-1 min-w-0 space-y-4">
             {previousImage && previousImage !== currentResult.imageData && !isRefining ? (
                <div className="space-y-3">
