@@ -9,10 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Filename sidecar isolation**: dynamic filename generation no longer blocks the rendered image from reaching review, and filename failures now fall back to a local slug instead of failing an otherwise successful generation.
 - **Skill output is now true lossless PNG (`infographic-agent` v3.0.1)**: `gemini-3.1-flash-lite-image` returns JPEG on the Gemini Developer API (which does not allow forcing the output format), so the CLI was saving JPEG bytes under a `.png` name — visibly degrading text. The skill now transcodes the model's output to real PNG via Pillow, threads the actual mime type through the refinement loop, and writes the correct file extension. `pip install` / `--install` now include `pillow` (google-genai remains the only hard requirement — without Pillow the script degrades gracefully to the model's native format).
 
 ### Changed
 
+- **Prepare eval gate**: Agent 1 output now receives deterministic quality checks before Agent 2 renders, with blocking contract failures stopped early and non-blocking warnings surfaced in the Studio thought stream.
+- **Portable skill loop sync (`infographic-agent` v3.1.0)**: the CLI now asks the research agent for the same web-compatible `PrepareResult` contract and runs the deterministic Prepare eval gate before image rendering, including direct/no-research fallback paths.
 - **Web model and resolution controls locked**: the web app now always uses `gemini-3.5-flash` for research/planning and `gemini-3.1-flash-lite-image` for image generation/refinement, including stale localStorage migrations. Web resolution choices are limited to 0.5K, 1K, and 2K.
 - **Portable skill quality model option**: the CLI skill keeps `gemini-3.1-flash-lite-image` as its default image model and adds a skill-only `--image-model gemini-3.1-flash-image` option for quality-focused runs.
 - **Agent loop UX surfaced in Studio**: the generation and refinement flows now expose the bounded loop state (research, plan, render, review, refine), turn count, HITL review status, and stop rule instead of only showing a generic thinking/refining state.

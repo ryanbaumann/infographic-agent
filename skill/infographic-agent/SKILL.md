@@ -5,9 +5,8 @@ description: >
   A research agent (gemini-3.5-flash) grounds the topic with Google Search and engineers a precise prompt,
   then gemini-3.1-flash-lite-image renders it into a PNG. No browser, Playwright, or Chromium dependencies —
   the only requirement is Google's GenAI SDK. Fully portable to any agent CLI environment.
-compatibility: "Requires Python 3.8+ and the google-genai + pillow packages (one pip install, no browser)."
 metadata:
-  version: "3.0.1"
+  version: "3.1.0"
   author: "Infographic Agent contributors"
 ---
 
@@ -20,8 +19,10 @@ You are an expert AI Infographic Designer and Coordinator. You generate high-qua
 <context>
 This skill mirrors the repo's web demo as a two-agent pipeline, both powered by Gemini:
 
-1. **Research orchestrator (`gemini-3.5-flash`):** reads the user's topic/content, optionally grounds it with Google Search, and engineers a precise, text-accurate image-generation prompt.
+1. **Research orchestrator (`gemini-3.5-flash`):** reads the user's topic/content, optionally grounds it with Google Search, and returns the same `PrepareResult` contract as the web app: analysis metadata, exact text strings, and a precise image-generation prompt.
 2. **Image generator (`gemini-3.1-flash-lite-image` by default):** renders that prompt directly into a polished infographic PNG. The portable skill may use `gemini-3.1-flash-image` via `--image-model` when the caller explicitly chooses quality over latency. The web app remains locked to `gemini-3.1-flash-lite-image`.
+
+Before rendering, `portable_infographic.py` runs the same deterministic Prepare eval gate as the web app: schema, explicit image-prompt prefix, quoted text strings, source attribution, accessibility guidance, and prompt length. Blocking failures stop before Render; warnings are printed but do not block the artifact.
 
 After the first draft, an interactive refine loop lets the user iterate ("make the header bolder", "use teal accents") — each turn re-invokes the image model with the previous image plus the edit, saving a new revision in seconds.
 
@@ -36,9 +37,10 @@ Run this skill as a bounded human-in-the-loop agent loop:
 1. **Intake:** collect topic/content, mode, aspect ratio, output path, and any brand/style constraints.
 2. **Research:** use the research orchestrator unless `--no-research` is set; never invent data points.
 3. **Plan:** produce the exact text strings, layout, palette, and image prompt before rendering.
-4. **Render:** call the image model once for the current plan and save the artifact.
-5. **Review:** stop for human review unless `--yes` was passed.
-6. **Refine:** apply one focused edit per turn, preserving the previous image as state, then return to Review.
+4. **Eval:** run deterministic Prepare checks and stop before Render on contract failures.
+5. **Render:** call the image model once for the current plan and save the artifact.
+6. **Review:** stop for human review unless `--yes` was passed.
+7. **Refine:** apply one focused edit per turn, preserving the previous image as state, then return to Review.
 
 Portable state is held locally by the CLI as the current image path plus turn history. Agents that support Gemini Enterprise Agent Platform can replace that local state with the Gemini Interactions API by storing each returned `interaction.id` and passing it as `previousInteractionId` on the next review/refine turn.
 
@@ -102,9 +104,10 @@ When invoking this skill autonomously (no human at the terminal), always pass `-
 
 ### Alternative: orchestrate directly with subagents
 If you prefer to orchestrate without the script:
-1. Ask a research/LLM subagent (e.g. `gemini-3.5-flash`) to produce a dense, text-accurate image-generation prompt from the user's content.
-2. Send that prompt to an image model (`gemini-3.1-flash-lite-image` by default; `gemini-3.1-flash-image` for skill-only quality runs) with `responseModalities: ['TEXT', 'IMAGE']` and save the returned PNG.
-3. Provide the link to the user, and offer refinement turns by re-sending the previous image plus the edit instruction.
+1. Ask a research/LLM subagent (e.g. `gemini-3.5-flash`) to produce the web-compatible `PrepareResult` JSON from the user's content.
+2. Run local checks before rendering: required schema, prompt starts with `"Generate a professional infographic image"`, final text strings exist, quoted strings are present in the prompt, source attribution exists, accessibility guidance exists, and prompt length is bounded.
+3. Send the validated prompt to an image model (`gemini-3.1-flash-lite-image` by default; `gemini-3.1-flash-image` for skill-only quality runs) with `responseModalities: ['TEXT', 'IMAGE']` and save the returned PNG.
+4. Provide the link to the user, and offer refinement turns by re-sending the previous image plus the edit instruction.
 </instructions>
 
 <principles>

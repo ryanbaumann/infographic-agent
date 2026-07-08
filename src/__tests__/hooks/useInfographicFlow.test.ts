@@ -349,6 +349,38 @@ describe('useInfographicFlow', () => {
       expect(result.current.state.agentLoop.phases.find(phase => phase.id === 'render')?.status).toBe('complete');
     });
 
+    it('does not fail generation when filename generation fails', async () => {
+      vi.mocked(geminiService.generateFilename).mockRejectedValueOnce(new Error('filename failed'));
+      const { result } = renderHook(() => useInfographicFlow());
+
+      await act(async () => {
+        await result.current.handleGenerate();
+      });
+
+      await waitFor(() => {
+        expect(result.current.state.generationPhase).toBe('complete');
+      });
+
+      expect(result.current.state.error).toBeNull();
+      expect(result.current.state.currentResult?.filename).toBe('loop-test');
+      expect(result.current.state.history[0]?.filename).toBe('loop-test');
+    });
+
+    it('updates the fallback filename when the filename sidecar completes', async () => {
+      vi.mocked(geminiService.generateFilename).mockResolvedValueOnce('generated-loop-filename');
+      const { result } = renderHook(() => useInfographicFlow());
+
+      await act(async () => {
+        await result.current.handleGenerate();
+      });
+
+      await waitFor(() => {
+        expect(result.current.state.currentResult?.filename).toBe('generated-loop-filename');
+      });
+
+      expect(result.current.state.history[0]?.filename).toBe('generated-loop-filename');
+    });
+
     it('advances the loop turn for a focused refinement', async () => {
       const { result } = renderHook(() => useInfographicFlow());
 

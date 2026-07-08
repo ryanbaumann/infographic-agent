@@ -155,38 +155,36 @@ const response = await client.models.generateContent('gemini-3.5-flash', {
 
 ### Output Schema
 
-Agent 1 produces a JSON response:
+Agent 1 produces the browser app's `PrepareResult` JSON response:
 
 ```typescript
 {
-  "layoutPlan": {
-    "sections": [
-      {
-        "position": "top",
-        "title": "Section Title (Verbatim)",
-        "content": "Key points and data...",
-        "chartType": "bar|pie|line|text",
-        "colorScheme": ["#4285F4", "#34A853", "#FBBC04"]
-      },
-      // ... more sections
-    ],
-    "typography": {
-      "headingFont": "sans-serif",
-      "bodyFont": "sans-serif",
-      "headingWeight": "bold",
-      "bodyWeight": "normal"
-    }
+  "analysis": {
+    "title": "Compelling Infographic Title",
+    "subtitle": "Supporting subtitle",
+    "sectionsCount": 4,
+    "dataPointsCount": 8,
+    "brandColors": ["#4285F4", "#34A853", "#FBBC04"],
+    "sourceAttribution": "Uploaded source plus Google Search"
   },
-  "groundedFacts": [
-    {
-      "claim": "Verified statistic",
-      "source": "Google Search | URL Context",
-      "confidence": "high"
-    }
-  ],
-  "imagePrompt": "Generate a professional infographic image showing... [step-by-step layout instructions] ... Use hex colors: #4285F4 (primary), #34A853 (success)... [verbatim text quotes]..."
+  "prompt": "Generate a professional infographic image... [step-by-step layout instructions, exact hex colors, and quoted text strings]",
+  "allTextStrings": ["Compelling Infographic Title", "Key Metric", "Source: ..."]
 }
 ```
+
+After JSON parsing, the app runs a deterministic `evaluatePrepareResult()` gate before rendering. Blocking failures stop the loop before Agent 2 receives a weak prompt:
+
+- missing required schema fields
+- prompt not starting with `"Generate a professional infographic image"`
+- missing final text strings
+- prompt longer than the reliability limit
+
+Non-blocking warnings are attached to `PrepareResult.qualityChecks` and displayed in the Studio thought stream:
+
+- text strings not quoted exactly in the renderer prompt
+- missing source attribution
+- missing accessibility or contrast guidance
+- prompt over the 800-word target but still below the hard limit
 
 ### Grounding Strategy
 

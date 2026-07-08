@@ -30,6 +30,22 @@ export interface UploadedFile {
 }
 
 // === Agent Output Types ===
+export type PrepareQualityCheckStatus = 'pass' | 'warn' | 'fail';
+export type PrepareQualityCheckId =
+  | 'schema'
+  | 'image-prompt'
+  | 'text-fidelity'
+  | 'grounding'
+  | 'accessibility'
+  | 'prompt-length';
+
+export interface PrepareQualityCheck {
+  id: PrepareQualityCheckId;
+  label: string;
+  status: PrepareQualityCheckStatus;
+  detail: string;
+}
+
 export interface PrepareResult {
   analysis: {
     title: string;
@@ -41,6 +57,7 @@ export interface PrepareResult {
   };
   prompt: string;
   allTextStrings: string[];
+  qualityChecks?: PrepareQualityCheck[];
 }
 
 // === Generation Types ===

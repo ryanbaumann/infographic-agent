@@ -14,7 +14,7 @@
  *   npx infographic-agent "Top 5 programming languages in 2026"
  *
  * First-time setup:
- *   npx infographic-agent --install   # pip install google-genai
+ *   npx infographic-agent --install   # pip install google-genai pillow
  *   # then just run it — the CLI walks you through getting a free API key.
  */
 
@@ -83,9 +83,9 @@ if (showHelp) {
   print(`
 infographic-agent v${pkg.version}
 
-Generate a professional infographic PNG directly with Gemini — a research
-agent (gemini-3.5-flash) grounds your topic, then the image model
-(gemini-3.1-flash-lite-image) renders it. No browser or Playwright needed.
+Generate a professional infographic PNG directly with Gemini: a research
+agent (gemini-3.5-flash) prepares and validates the prompt, then the image
+model (gemini-3.1-flash-lite-image) renders it. No browser or Playwright needed.
 
 Usage:
   npx infographic-agent "<topic>" [options]
@@ -101,7 +101,7 @@ Options:
   --no-open              Do not auto-open the result
   --yes, -y              Non-interactive: generate once and exit (no refine loop)
   --setup                (Re)configure your free Gemini API key and exit
-  --install              Install the Python dependency (google-genai)
+  --install              Install Python dependencies (google-genai, pillow)
   --help, -h             Show this help message
 
 Getting started (a free key takes ~20 seconds):
@@ -128,7 +128,7 @@ if (!python) {
   process.exit(1);
 }
 
-// ─── --install: first-time dependency setup (just the GenAI SDK) ─────────────
+// ─── --install: first-time dependency setup ─────────────────────────────────
 
 if (doInstall) {
   print("Installing Python dependencies (google-genai, pillow)...");

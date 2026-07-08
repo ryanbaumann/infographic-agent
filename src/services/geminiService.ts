@@ -7,6 +7,7 @@ import { GoogleGenAI } from '@google/genai';
 import type {
   UploadedFile,
   PrepareResult,
+  PrepareQualityCheck,
   GenerationResult,
   AdminConfig,
   InfographicConfig,
@@ -293,6 +294,120 @@ function parseJsonResponse<T>(text: string): T {
 }
 
 // ---------------------------------------------------------------------------
+// Prepare-result eval gate
+// ---------------------------------------------------------------------------
+
+const IMAGE_PROMPT_PREFIX = 'Generate a professional infographic image';
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function wordCount(text: string): number {
+  return text.trim().split(/\s+/).filter(Boolean).length;
+}
+
+function asStringArray(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === 'string').map(item => item.trim()).filter(Boolean)
+    : [];
+}
+
+function includesQuotedText(prompt: string, text: string): boolean {
+  return prompt.includes(`"${text}"`);
+}
+
+export function evaluatePrepareResult(result: Partial<PrepareResult> | null | undefined): PrepareQualityCheck[] {
+  const analysis: Record<string, unknown> = isRecord(result?.analysis) ? result.analysis : {};
+  const prompt = typeof result?.prompt === 'string' ? result.prompt.trim() : '';
+  const allTextStrings = asStringArray(result?.allTextStrings);
+  const brandColors = asStringArray(analysis.brandColors);
+
+  const schemaIssues = [
+    typeof analysis.title === 'string' && analysis.title.trim() ? null : 'missing title',
+    typeof analysis.subtitle === 'string' ? null : 'missing subtitle',
+    typeof analysis.sectionsCount === 'number' ? null : 'missing sectionsCount',
+    typeof analysis.dataPointsCount === 'number' ? null : 'missing dataPointsCount',
+    Array.isArray(analysis.brandColors) ? null : 'missing brandColors',
+    typeof analysis.sourceAttribution === 'string' ? null : 'missing sourceAttribution',
+    prompt ? null : 'missing prompt',
+    Array.isArray(result?.allTextStrings) ? null : 'missing allTextStrings',
+  ].filter((issue): issue is string => Boolean(issue));
+
+  const invalidColors = brandColors.filter(color => !/^#[0-9a-f]{6}$/i.test(color));
+  if (invalidColors.length > 0) {
+    schemaIssues.push(`invalid brand color ${invalidColors[0]}`);
+  }
+
+  const missingQuotedStrings = allTextStrings.filter(text => !includesQuotedText(prompt, text));
+  const promptWords = wordCount(prompt);
+
+  return [
+    {
+      id: 'schema',
+      label: 'Structured schema',
+      status: schemaIssues.length === 0 ? 'pass' : 'fail',
+      detail: schemaIssues.length === 0
+        ? 'Prepare output includes the required analysis fields, prompt, and text list.'
+        : schemaIssues.join('; '),
+    },
+    {
+      id: 'image-prompt',
+      label: 'Explicit image prompt',
+      status: prompt.startsWith(IMAGE_PROMPT_PREFIX) ? 'pass' : 'fail',
+      detail: prompt.startsWith(IMAGE_PROMPT_PREFIX)
+        ? 'Prompt starts with the required image-generation request.'
+        : `Prompt must start with "${IMAGE_PROMPT_PREFIX}".`,
+    },
+    {
+      id: 'text-fidelity',
+      label: 'Text fidelity',
+      status: allTextStrings.length === 0 ? 'fail' : missingQuotedStrings.length === 0 ? 'pass' : 'warn',
+      detail: allTextStrings.length === 0
+        ? 'No final text strings were returned for the renderer.'
+        : missingQuotedStrings.length === 0
+          ? 'All final text strings are quoted in the renderer prompt.'
+          : `${missingQuotedStrings.length} text string(s) are not quoted exactly in the renderer prompt.`,
+    },
+    {
+      id: 'grounding',
+      label: 'Grounding',
+      status: typeof analysis.sourceAttribution === 'string' && analysis.sourceAttribution.trim() ? 'pass' : 'warn',
+      detail: typeof analysis.sourceAttribution === 'string' && analysis.sourceAttribution.trim()
+        ? 'Source attribution is present.'
+        : 'Source attribution is empty; generated facts may be harder to audit.',
+    },
+    {
+      id: 'accessibility',
+      label: 'Accessibility',
+      status: /\b(WCAG|contrast|accessib)/i.test(prompt) ? 'pass' : 'warn',
+      detail: /\b(WCAG|contrast|accessib)/i.test(prompt)
+        ? 'Prompt includes contrast or accessibility instructions.'
+        : 'Prompt does not explicitly mention contrast or accessibility.',
+    },
+    {
+      id: 'prompt-length',
+      label: 'Prompt length',
+      status: promptWords <= 800 ? 'pass' : promptWords <= 1200 ? 'warn' : 'fail',
+      detail: promptWords <= 800
+        ? `Prompt is ${promptWords} words, within the 800-word target.`
+        : promptWords <= 1200
+          ? `Prompt is ${promptWords} words; target is 800 words for renderer reliability.`
+          : `Prompt is ${promptWords} words; shorten before rendering.`,
+    },
+  ];
+}
+
+function validatePrepareResult(result: PrepareResult): PrepareResult {
+  const qualityChecks = evaluatePrepareResult(result);
+  const failures = qualityChecks.filter(check => check.status === 'fail');
+  if (failures.length > 0) {
+    throw new Error(`Prepare result failed quality gates: ${failures.map(check => `${check.label}: ${check.detail}`).join(' ')}`);
+  }
+  return { ...result, qualityChecks };
+}
+
+// ---------------------------------------------------------------------------
 // Agent 1: Prepare Infographic (analyzes content, plans layout, engineers prompt)
 // ---------------------------------------------------------------------------
 
@@ -452,7 +567,7 @@ export async function prepareInfographic(
       }
       accumulatedText += texts.join('');
     }
-    return parseJsonResponse<PrepareResult>(accumulatedText);
+    return validatePrepareResult(parseJsonResponse<PrepareResult>(accumulatedText));
   });
 }
 
@@ -688,6 +803,11 @@ export async function refineInfographic(
 }
 
 export async function generateFilename(prompt: string, adminConfig: AdminConfig): Promise<string> {
+  if (!checkRateLimit()) {
+    const { resetSeconds } = getRateLimitStatus();
+    throw new Error(`Rate limited: 10 requests per minute. Please wait ${resetSeconds}s and retry.`);
+  }
+
   return retryWithBackoff(async () => {
     const ai = getAI(adminConfig);
     const response = await ai.models.generateContent({

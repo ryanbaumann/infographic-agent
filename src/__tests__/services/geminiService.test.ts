@@ -5,6 +5,7 @@ import {
   hasApiKey,
   getTrialTurnsCount,
   incrementTrialTurns,
+  evaluatePrepareResult,
 } from '../../services/geminiService';
 import type { AdminConfig } from '../../types';
 
@@ -192,6 +193,61 @@ describe('geminiService', () => {
       };
 
       expect(err.status).toBe(408);
+    });
+  });
+
+  describe('prepare result evals', () => {
+    it('passes a renderer-ready prepare result', () => {
+      const checks = evaluatePrepareResult({
+        analysis: {
+          title: 'Loop Test',
+          subtitle: 'Stateful generation',
+          sectionsCount: 2,
+          dataPointsCount: 3,
+          brandColors: ['#4285F4', '#34A853'],
+          sourceAttribution: 'Uploaded source',
+        },
+        prompt: 'Generate a professional infographic image. At the top, place "Loop Test". Include WCAG AA contrast guidance.',
+        allTextStrings: ['Loop Test'],
+      });
+
+      expect(checks.every(check => check.status === 'pass')).toBe(true);
+    });
+
+    it('fails blocking renderer contract violations', () => {
+      const checks = evaluatePrepareResult({
+        analysis: {
+          title: 'Loop Test',
+          subtitle: 'Stateful generation',
+          sectionsCount: 2,
+          dataPointsCount: 3,
+          brandColors: ['#4285F4'],
+          sourceAttribution: 'Uploaded source',
+        },
+        prompt: 'Create a nice visualization with WCAG AA contrast guidance.',
+        allTextStrings: ['Loop Test'],
+      });
+
+      expect(checks.find(check => check.id === 'image-prompt')?.status).toBe('fail');
+      expect(checks.find(check => check.id === 'text-fidelity')?.status).toBe('warn');
+    });
+
+    it('warns when source attribution or accessibility guidance is missing', () => {
+      const checks = evaluatePrepareResult({
+        analysis: {
+          title: 'Loop Test',
+          subtitle: 'Stateful generation',
+          sectionsCount: 2,
+          dataPointsCount: 3,
+          brandColors: ['#4285F4'],
+          sourceAttribution: '',
+        },
+        prompt: 'Generate a professional infographic image. At the top, place "Loop Test".',
+        allTextStrings: ['Loop Test'],
+      });
+
+      expect(checks.find(check => check.id === 'grounding')?.status).toBe('warn');
+      expect(checks.find(check => check.id === 'accessibility')?.status).toBe('warn');
     });
   });
 

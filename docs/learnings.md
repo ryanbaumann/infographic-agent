@@ -63,6 +63,11 @@ The SDK types do not always support newer parameters. Use the `as any` cast patt
 - Use a dedicated system prompt emphasizing **preservation**: *"Preserve all elements the user did not ask to change."*
 - Wrap refinement inputs in `<current_image>` and `<refinement>` XML tags to isolate the previous image state from the requested modifications.
 
+### Deterministic Prepare Evals
+- Put a deterministic eval gate between Agent 1 (Prepare) and Agent 2 (Render). `evaluatePrepareResult()` checks schema shape, explicit image prompt prefix, quoted text strings, source attribution, accessibility guidance, and prompt length before the image model is invoked.
+- Treat renderer-breaking failures as stop conditions: missing schema fields, missing final text strings, missing explicit image prompt prefix, or extreme prompt length. Treat weaker signals as warnings so the loop stays usable while still surfacing quality risks.
+- Display eval status in the thought stream after Prepare completes. This makes the agent loop inspectable rather than asking users to trust a generic loading state.
+
 ---
 
 ## 3. Frontend Performance & Base64 Handling
@@ -104,7 +109,8 @@ The SDK types do not always support newer parameters. Use the `as any` cast patt
 
 ### Download Optimizations & Filename Generation
 - **Lossless PNG Downloads**: Downloaded files are served as lossless PNG rather than converting to JPEG via canvas. This avoids quality loss and prevents transparent alpha channels from rendering with weird artifacting.
-- **Dynamic Filename Generation**: A dedicated, low-latency call to `gemini-3.1-flash-lite` (configured with `thinkingConfig: { thinkingLevel: 'MINIMAL', includeThoughts: false }`) generates a clean, linux-friendly kebab-case filename of 4-5 words based on the infographic's prompt. This replaces generic `infographic-<timestamp>.jpg` names with descriptive ones (e.g. `history-of-the-internet.png`).
+- **Dynamic Filename Generation**: A dedicated, low-latency call to `gemini-3.5-flash` (configured with `thinkingConfig: { thinkingLevel: 'MINIMAL', includeThoughts: false }`) generates a clean, linux-friendly kebab-case filename of 4-5 words based on the infographic's prompt. This replaces generic `infographic-<timestamp>.jpg` names with descriptive ones (e.g. `history-of-the-internet.png`).
+- **Optional Sidecars Stay Off the Render Path**: Filename generation is a convenience sidecar. The app should display the rendered image immediately with a local slug fallback, then update the filename asynchronously if the model-generated name succeeds. Optional sidecar failures must not turn a successful render into a failed generation.
 
 ### Studio & Refinement UX
 - **Before/After Comparisons**: The `BeforeAfterSlider` is embedded directly into the main studio viewer, replacing the static image when a previous generation state is available.

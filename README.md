@@ -63,8 +63,9 @@ This opens `/app.html` on `http://localhost:3456`.
 
 Generation runs as a small two-agent pipeline, both powered by Gemini:
 
-1. **Analysis agent** (`gemini-3.5-flash`) reads your files/URLs/prompt, optionally searches the web, and produces a structured content plan — layout, sections, key data points.
-2. **Image agent** (`gemini-3.1-flash-lite-image`) turns that plan into a rendered infographic, streaming its design "thoughts" back to the UI as it works.
+1. **Analysis agent** (`gemini-3.5-flash`) reads your files/URLs/prompt, optionally searches the web, and produces a structured Prepare result — analysis metadata, exact text strings, key data points, and a renderer prompt.
+2. **Eval gate** checks the Prepare result for schema, explicit image prompt prefix, quoted text strings, source attribution, accessibility guidance, and prompt length before rendering.
+3. **Image agent** (`gemini-3.1-flash-lite-image`) turns the validated prompt into a rendered infographic, streaming its design "thoughts" back to the UI as it works.
 
 After the first draft, the **refinement chat** lets you send follow-up instructions ("make the header bolder", "use our brand colors") — each turn re-invokes the image agent with the conversation history, and the before/after slider shows what changed.
 
@@ -76,7 +77,7 @@ Prefer working from a coding agent instead of the browser? The [`skill/infograph
 
 **No browser, Playwright, or Chromium download** — install is a single `pip install google-genai pillow` (Google's GenAI SDK runs the pipeline; Pillow transcodes the output to lossless PNG for crisp text).
 
-The skill is also published on npm and works with the [Vercel agent skills ecosystem](https://github.com/vercel-labs/skills), so you can run it anywhere with a single command:
+The skill is also published on npm as `infographic-agent` and works with the [Vercel agent skills ecosystem](https://github.com/vercel-labs/skills), so you can run it anywhere with a single command. The CLI mirrors the web loop: Prepare, deterministic eval, Render, Review, and optional Refine.
 
 **Install into your AI coding agent** (Claude Code, Cursor, Copilot, etc.):
 ```bash

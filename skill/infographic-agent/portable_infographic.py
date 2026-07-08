@@ -41,15 +41,26 @@ import sys
 import time
 from pathlib import Path
 
-try:
-    from google import genai
-    from google.genai import types
-except ImportError:
-    sys.stderr.write(
-        "[Error] The Google GenAI SDK is not installed.\n"
-        "        Install it with:  pip install google-genai\n"
-    )
-    sys.exit(1)
+genai = None
+types = None
+
+
+def ensure_genai() -> None:
+    """Import the Gemini SDK only when an API call is about to run."""
+    global genai, types
+    if genai is not None and types is not None:
+        return
+    try:
+        from google import genai as imported_genai
+        from google.genai import types as imported_types
+    except ImportError:
+        sys.stderr.write(
+            "[Error] The Google GenAI SDK is not installed.\n"
+            "        Install it with:  pip install google-genai\n"
+        )
+        sys.exit(1)
+    genai = imported_genai
+    types = imported_types
 
 # --------------------------------------------------------------------------- #
 # Constants — keep the default model IDs in lockstep with the web demo (src/types.ts)
@@ -59,6 +70,7 @@ ORCHESTRATOR_MODEL = "gemini-3.5-flash"          # research + prompt engineering
 IMAGE_MODEL = "gemini-3.1-flash-lite-image"      # direct infographic rendering
 QUALITY_IMAGE_MODEL = "gemini-3.1-flash-image"   # skill-only quality option
 SUPPORTED_IMAGE_MODELS = (IMAGE_MODEL, QUALITY_IMAGE_MODEL)
+IMAGE_PROMPT_PREFIX = "Generate a professional infographic image"
 
 AISTUDIO_KEY_URL = "https://aistudio.google.com/apikey"
 CONFIG_DIR = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config")) / "infographic-agent"
@@ -114,8 +126,16 @@ The "prompt" field you output is sent directly to an image-generation model. It 
 <output_format>
 Respond with valid JSON only. No markdown fences. No extra text. Schema:
 {
-  "title": "string — compelling infographic title",
-  "prompt": "string — the complete image-generation prompt following <prompt_rules>"
+  "analysis": {
+    "title": "string — compelling infographic title",
+    "subtitle": "string — supporting subtitle",
+    "sectionsCount": number,
+    "dataPointsCount": number,
+    "brandColors": ["#hex", "#hex", "..."],
+    "sourceAttribution": "string — source credits"
+  },
+  "prompt": "string — the complete image-generation prompt following <prompt_rules>",
+  "allTextStrings": ["every", "text", "string", "in", "the", "infographic"]
 }
 </output_format>"""
 
@@ -185,6 +205,186 @@ def _friendly_api_error(err: Exception) -> str:
     if "429" in s or "RESOURCE_EXHAUSTED" in s:
         return "Rate limit / quota exceeded. Wait a moment and try again."
     return _scrub(s)
+
+
+def _word_count(text: str) -> int:
+    return len([w for w in text.strip().split() if w])
+
+
+def _as_string_list(value) -> list:
+    return [str(v).strip() for v in value if str(v).strip()] if isinstance(value, list) else []
+
+
+def _quoted_in_prompt(prompt: str, text: str) -> bool:
+    return f'"{text}"' in prompt
+
+
+def evaluate_prepare_result(plan: dict) -> list:
+    """Deterministic handoff checks matching the web app's Prepare eval gate."""
+    analysis = plan.get("analysis") if isinstance(plan.get("analysis"), dict) else {}
+    prompt = (plan.get("prompt") or "").strip()
+    all_text = _as_string_list(plan.get("allTextStrings"))
+    brand_colors = _as_string_list(analysis.get("brandColors"))
+
+    schema_issues = []
+    if not str(analysis.get("title") or "").strip():
+        schema_issues.append("missing title")
+    if not isinstance(analysis.get("subtitle"), str):
+        schema_issues.append("missing subtitle")
+    if not isinstance(analysis.get("sectionsCount"), (int, float)):
+        schema_issues.append("missing sectionsCount")
+    if not isinstance(analysis.get("dataPointsCount"), (int, float)):
+        schema_issues.append("missing dataPointsCount")
+    if not isinstance(analysis.get("brandColors"), list):
+        schema_issues.append("missing brandColors")
+    if not isinstance(analysis.get("sourceAttribution"), str):
+        schema_issues.append("missing sourceAttribution")
+    if not prompt:
+        schema_issues.append("missing prompt")
+    if not isinstance(plan.get("allTextStrings"), list):
+        schema_issues.append("missing allTextStrings")
+
+    invalid_colors = [c for c in brand_colors if not re.match(r"^#[0-9a-fA-F]{6}$", c)]
+    if invalid_colors:
+        schema_issues.append(f"invalid brand color {invalid_colors[0]}")
+
+    missing_quoted = [text for text in all_text if not _quoted_in_prompt(prompt, text)]
+    prompt_words = _word_count(prompt)
+
+    return [
+        {
+            "id": "schema",
+            "label": "Structured schema",
+            "status": "pass" if not schema_issues else "fail",
+            "detail": "Prepare output includes the required analysis fields, prompt, and text list."
+            if not schema_issues else "; ".join(schema_issues),
+        },
+        {
+            "id": "image-prompt",
+            "label": "Explicit image prompt",
+            "status": "pass" if prompt.startswith(IMAGE_PROMPT_PREFIX) else "fail",
+            "detail": "Prompt starts with the required image-generation request."
+            if prompt.startswith(IMAGE_PROMPT_PREFIX) else f'Prompt must start with "{IMAGE_PROMPT_PREFIX}".',
+        },
+        {
+            "id": "text-fidelity",
+            "label": "Text fidelity",
+            "status": "fail" if not all_text else "pass" if not missing_quoted else "warn",
+            "detail": "No final text strings were returned for the renderer."
+            if not all_text else "All final text strings are quoted in the renderer prompt."
+            if not missing_quoted else f"{len(missing_quoted)} text string(s) are not quoted exactly in the renderer prompt.",
+        },
+        {
+            "id": "grounding",
+            "label": "Grounding",
+            "status": "pass" if str(analysis.get("sourceAttribution") or "").strip() else "warn",
+            "detail": "Source attribution is present."
+            if str(analysis.get("sourceAttribution") or "").strip() else "Source attribution is empty; generated facts may be harder to audit.",
+        },
+        {
+            "id": "accessibility",
+            "label": "Accessibility",
+            "status": "pass" if re.search(r"\b(WCAG|contrast|accessib)", prompt, re.I) else "warn",
+            "detail": "Prompt includes contrast or accessibility instructions."
+            if re.search(r"\b(WCAG|contrast|accessib)", prompt, re.I) else "Prompt does not explicitly mention contrast or accessibility.",
+        },
+        {
+            "id": "prompt-length",
+            "label": "Prompt length",
+            "status": "pass" if prompt_words <= 800 else "warn" if prompt_words <= 1200 else "fail",
+            "detail": f"Prompt is {prompt_words} words, within the 800-word target."
+            if prompt_words <= 800 else f"Prompt is {prompt_words} words; target is 800 words for renderer reliability."
+            if prompt_words <= 1200 else f"Prompt is {prompt_words} words; shorten before rendering.",
+        },
+    ]
+
+
+def validate_prepare_result(plan: dict) -> dict:
+    checks = evaluate_prepare_result(plan)
+    failures = [c for c in checks if c["status"] == "fail"]
+    if failures:
+        details = " ".join(f'{c["label"]}: {c["detail"]}' for c in failures)
+        raise ValueError(f"Prepare result failed quality gates: {details}")
+    plan["qualityChecks"] = checks
+    return plan
+
+
+def infer_title(content: str) -> str:
+    for line in content.splitlines():
+        cleaned = re.sub(r"^[#*\-\s]+", "", line).strip()
+        if cleaned:
+            return cleaned[:80]
+    return "Infographic"
+
+
+def normalize_prepare_plan(plan: dict, content: str, mode: str, extra: str) -> dict:
+    """Accept the current web schema and repair older two-field plans when possible."""
+    if not isinstance(plan, dict):
+        plan = {}
+
+    prompt = (plan.get("prompt") or "").strip()
+    title = ""
+    if isinstance(plan.get("analysis"), dict):
+        title = str(plan["analysis"].get("title") or "").strip()
+    title = title or str(plan.get("title") or "").strip() or infer_title(content)
+
+    analysis = plan.get("analysis") if isinstance(plan.get("analysis"), dict) else {}
+    normalized = {
+        "analysis": {
+            "title": title,
+            "subtitle": str(analysis.get("subtitle") or MODES.get(mode, "") or "Visual summary").strip(),
+            "sectionsCount": analysis.get("sectionsCount") if isinstance(analysis.get("sectionsCount"), (int, float)) else 3,
+            "dataPointsCount": analysis.get("dataPointsCount") if isinstance(analysis.get("dataPointsCount"), (int, float)) else len(re.findall(r"\d+(?:\.\d+)?%?", content)),
+            "brandColors": analysis.get("brandColors") if isinstance(analysis.get("brandColors"), list) else ["#4285F4", "#34A853", "#FBBC04"],
+            "sourceAttribution": str(analysis.get("sourceAttribution") or "User-provided content").strip(),
+        },
+        "prompt": prompt,
+        "allTextStrings": plan.get("allTextStrings") if isinstance(plan.get("allTextStrings"), list) else [title],
+    }
+
+    if extra and extra not in normalized["prompt"]:
+        normalized["prompt"] = f'{normalized["prompt"]}\n\nAdditional instructions: {extra}'
+
+    return normalized
+
+
+def direct_prepare_plan(content: str, mode: str, extra: str) -> dict:
+    """Build a renderer-ready PrepareResult without the research agent."""
+    title = infer_title(content)
+    mode_hint = MODES.get(mode, "")
+    prompt = (
+        f'Generate a professional infographic image. At the top, place "{title}" as the main title. '
+        "Clearly and accurately visualize the provided content using a clean modern layout with strong visual hierarchy, "
+        "legible typography, accessible color contrast (minimum 4.5:1), and polished spacing. "
+        "Use #4285F4 as the primary color, #34A853 as the secondary color, and #FBBC04 as an accent. "
+        "Render all quoted text exactly as written. "
+        + (f"Style: {mode_hint}. " if mode_hint else "")
+        + (f"Additional instructions: {extra}. " if extra else "")
+        + f"Source content to summarize visually: {content}"
+    )
+    return validate_prepare_result({
+        "analysis": {
+            "title": title,
+            "subtitle": mode_hint or "Visual summary",
+            "sectionsCount": 3,
+            "dataPointsCount": len(re.findall(r"\d+(?:\.\d+)?%?", content)),
+            "brandColors": ["#4285F4", "#34A853", "#FBBC04"],
+            "sourceAttribution": "User-provided content",
+        },
+        "prompt": prompt,
+        "allTextStrings": [title],
+    })
+
+
+def print_prepare_eval(plan: dict) -> None:
+    checks = plan.get("qualityChecks") or []
+    if not checks:
+        return
+    passed = sum(1 for c in checks if c.get("status") == "pass")
+    warnings = [c for c in checks if c.get("status") == "warn"]
+    info(f"✅ Prepare evals: {passed}/{len(checks)} passed" + (f", {len(warnings)} warning(s)" if warnings else ""))
+    for check in warnings:
+        warn(f'{check["label"]}: {check["detail"]}')
 
 
 # --------------------------------------------------------------------------- #
@@ -291,6 +491,7 @@ def resolve_api_key(force_setup: bool = False) -> str:
 
 
 def build_client(api_key: str) -> "genai.Client":
+    ensure_genai()
     if api_key:
         return genai.Client(api_key=api_key)
     # Vertex AI fallback (GOOGLE_CLOUD_PROJECT is set).
@@ -305,7 +506,7 @@ def build_client(api_key: str) -> "genai.Client":
 # Agent 1 — research orchestrator (gemini-3.5-flash + Google Search grounding)
 # --------------------------------------------------------------------------- #
 
-def research_prompt(client, content: str, mode: str, aspect: str, extra: str) -> str:
+def research_prompt(client, content: str, mode: str, aspect: str, extra: str) -> dict:
     """Ground the topic and engineer a precise image-generation prompt."""
     mode_hint = MODES.get(mode, "")
     user_prompt = "\n".join(
@@ -336,14 +537,14 @@ def research_prompt(client, content: str, mode: str, aspect: str, extra: str) ->
             response = client.models.generate_content(
                 model=ORCHESTRATOR_MODEL, contents=user_prompt, config=config
             )
-            plan = _parse_json(response.text or "")
-            prompt = (plan.get("prompt") or "").strip()
-            title = (plan.get("title") or "").strip()
-            if not prompt:
+            plan = validate_prepare_result(normalize_prepare_plan(_parse_json(response.text or ""), content, mode, extra))
+            title = plan["analysis"]["title"]
+            if not plan["prompt"]:
                 raise ValueError("research agent returned no prompt")
             if title:
                 info(f'   ↳ "{title}"')
-            return prompt
+            print_prepare_eval(plan)
+            return plan
         except Exception as e:  # noqa: BLE001
             last_error = e
             if _is_transient(e) and attempt < 2:
@@ -356,21 +557,16 @@ def research_prompt(client, content: str, mode: str, aspect: str, extra: str) ->
     # Research is a best-effort enhancement: fall back to a direct prompt so the
     # user still gets an image instead of a hard failure.
     warn(f"Research step failed ({_friendly_api_error(last_error)}). Falling back to a direct prompt.")
-    return direct_prompt(content, mode, extra)
+    plan = direct_prompt(content, mode, extra)
+    print_prepare_eval(plan)
+    return plan
 
 
-def direct_prompt(content: str, mode: str, extra: str) -> str:
+def direct_prompt(content: str, mode: str, extra: str) -> dict:
     """Build an image prompt without the research agent (used by --no-research / fallback)."""
-    mode_hint = MODES.get(mode, "")
-    return (
-        "Generate a professional infographic image that clearly and accurately visualizes "
-        "the following content. Use a clean modern layout with strong visual hierarchy, "
-        "legible typography, and accessible color contrast (minimum 4.5:1). "
-        "Render all key text exactly as written.\n\n"
-        + (f"Style: {mode_hint}\n\n" if mode_hint else "")
-        + (f"Additional instructions: {extra}\n\n" if extra else "")
-        + f"Content:\n{content}"
-    )
+    plan = direct_prepare_plan(content, mode, extra)
+    print_prepare_eval(plan)
+    return plan
 
 
 def _parse_json(text: str) -> dict:
@@ -594,10 +790,10 @@ def main() -> None:
 
     try:
         if args.no_research:
-            prompt = direct_prompt(content, args.mode, args.instructions)
+            plan = direct_prompt(content, args.mode, args.instructions)
         else:
-            prompt = research_prompt(client, content, args.mode, args.aspect, args.instructions)
-        image_bytes, mime = generate_image(client, prompt, args.aspect, args.image_model)
+            plan = research_prompt(client, content, args.mode, args.aspect, args.instructions)
+        image_bytes, mime = generate_image(client, plan["prompt"], args.aspect, args.image_model)
     except Exception as e:  # noqa: BLE001
         error(_friendly_api_error(e))
         sys.exit(1)
