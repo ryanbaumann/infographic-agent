@@ -3,10 +3,6 @@ import type { AdminConfig, ImageResolution } from '../types';
 import { DEFAULT_ADMIN_CONFIG } from '../types';
 import { saveApiKey, clearApiKey, hasApiKey, getTrialTurnsCount } from '../services/geminiService';
 
-const isMasterView = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('view') === 'master';
-const isProdDeploy = import.meta.env.PROD || import.meta.env.VITE_PRODUCTION_DEPLOY === 'true';
-const allowQualityModel = isMasterView && !isProdDeploy;
-
 interface AdminPanelProps {
   config: AdminConfig;
   onUpdate: (partial: Partial<AdminConfig>) => void;
@@ -22,7 +18,7 @@ const sectionClasses = 'p-6 border-b border-gborder-light dark:border-gborder-da
 
 export default function AdminPanel({ config, onUpdate, onClose }: AdminPanelProps) {
   const thinkingLevels: AdminConfig['thinkingLevel'][] = ['LOW', 'HIGH'];
-  const resolutions: ImageResolution[] = ['0.5K', '1K', '2K', '4K'];
+  const resolutions: ImageResolution[] = ['0.5K', '1K', '2K'];
   const [keyDraft, setKeyDraft] = useState('');
   const [showKey, setShowKey] = useState(false);
   const [keyIsSet, setKeyIsSet] = useState(() => hasApiKey(config));
@@ -135,12 +131,9 @@ export default function AdminPanel({ config, onUpdate, onClose }: AdminPanelProp
             value={config.imageGenModel}
             onChange={(e) => onUpdate({ imageGenModel: e.target.value })}
             className={inputClasses}
-            disabled={!allowQualityModel}
+            disabled
           >
             <option value="gemini-3.1-flash-lite-image">gemini-3.1-flash-lite-image (Fast)</option>
-            {allowQualityModel && (
-              <option value="gemini-3.1-flash-image">gemini-3.1-flash-image (Quality)</option>
-            )}
           </select>
         </div>
 

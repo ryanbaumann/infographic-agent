@@ -1,11 +1,12 @@
 import { useEffect, useRef, useMemo, createElement, type ReactNode } from 'react';
-import type { ThoughtBubble, PrepareResult, GenerationPhase } from '../types';
+import type { ThoughtBubble, PrepareResult, GenerationPhase, AgentLoopState } from '../types';
 
 interface ThoughtStreamProps {
   thoughts: ThoughtBubble[];
   phase: GenerationPhase;
   elapsed: number;
   prepareResult: PrepareResult | null;
+  agentLoop: AgentLoopState;
 }
 
 function formatTime(s: number) {
@@ -103,7 +104,73 @@ function MarkdownContent({ text }: { text: string }) {
   return createElement('div', { className: 'text-xs text-gtext-secondary dark:text-gtext-secondary-dark space-y-0.5' }, ...elements);
 }
 
-export default function ThoughtStream({ thoughts, phase, elapsed, prepareResult }: ThoughtStreamProps) {
+function getPhaseIcon(status: AgentLoopState['phases'][number]['status']) {
+  if (status === 'complete') return 'check_circle';
+  if (status === 'active') return 'progress_activity';
+  return 'radio_button_unchecked';
+}
+
+function getPhaseClass(status: AgentLoopState['phases'][number]['status']) {
+  if (status === 'complete') return 'text-gsuccess';
+  if (status === 'active') return 'text-gblue-600 dark:text-gblue-300';
+  return 'text-gtext-secondary/50 dark:text-gtext-secondary-dark/50';
+}
+
+function LoopStatus({ agentLoop }: { agentLoop: AgentLoopState }) {
+  const activePhase = agentLoop.phases.find(phase => phase.status === 'active');
+
+  return (
+    <div className="rounded-gbtn border border-gborder-light dark:border-gborder-dark bg-white dark:bg-gsurface-card-dark p-3 shadow-gcard-sm">
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <div className="text-xs font-semibold text-gtext-primary dark:text-gtext-primary-dark">
+            Turn {agentLoop.turn || 1}
+          </div>
+          <div className="text-[11px] text-gtext-secondary dark:text-gtext-secondary-dark truncate">
+            {agentLoop.stateBackend === 'browser-local' ? 'Browser-local state' : 'Interactions state'}
+          </div>
+        </div>
+        <span className={`inline-flex items-center gap-1 rounded-gpill px-2 py-1 text-[11px] font-medium ${
+          agentLoop.hitlStatus === 'awaiting-input'
+            ? 'bg-ggreen/10 text-ggreen-600 dark:text-ggreen'
+            : 'bg-gblue-50 dark:bg-gblue-900/30 text-gblue-600 dark:text-gblue-300'
+        }`}>
+          <span className="material-symbols-outlined text-sm">
+            {agentLoop.hitlStatus === 'awaiting-input' ? 'person_check' : 'sync'}
+          </span>
+          {agentLoop.hitlStatus === 'awaiting-input' ? 'HITL review' : 'Running'}
+        </span>
+      </div>
+
+      {activePhase && (
+        <p className="mt-2 text-xs text-gtext-secondary dark:text-gtext-secondary-dark">
+          {activePhase.detail}
+        </p>
+      )}
+
+      <div className="mt-3 grid grid-cols-2 gap-1.5">
+        {agentLoop.phases.map((loopPhase) => (
+          <div
+            key={loopPhase.id}
+            className={`flex items-center gap-1.5 rounded-gpill px-2 py-1 text-[11px] font-medium ${
+              loopPhase.status === 'active'
+                ? 'bg-gblue-50 dark:bg-gblue-900/30 text-gblue-700 dark:text-gblue-200'
+                : 'bg-gsurface-light dark:bg-gsurface-elevated-dark text-gtext-secondary dark:text-gtext-secondary-dark'
+            }`}
+            title={loopPhase.detail}
+          >
+            <span className={`material-symbols-outlined text-sm ${getPhaseClass(loopPhase.status)}`}>
+              {getPhaseIcon(loopPhase.status)}
+            </span>
+            <span className="truncate">{loopPhase.label}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export default function ThoughtStream({ thoughts, phase, elapsed, prepareResult, agentLoop }: ThoughtStreamProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -118,13 +185,15 @@ export default function ThoughtStream({ thoughts, phase, elapsed, prepareResult 
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold text-gtext-primary dark:text-gtext-primary-dark flex items-center gap-1.5">
           <span className="material-symbols-outlined text-lg text-gblue-600 dark:text-gblue-300">psychology</span>
-          AI Thinking
+          Agent Loop
         </h3>
         <div className="flex items-center gap-1.5 text-xs text-gblue-600 dark:text-gblue-300 font-medium">
           <span className="material-symbols-outlined text-sm">timer</span>
           {formatTime(elapsed)}
         </div>
       </div>
+
+      <LoopStatus agentLoop={agentLoop} />
 
       {/* Thought bubbles scrollable area */}
       <div

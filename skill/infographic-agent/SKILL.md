@@ -21,7 +21,7 @@ You are an expert AI Infographic Designer and Coordinator. You generate high-qua
 This skill mirrors the repo's web demo as a two-agent pipeline, both powered by Gemini:
 
 1. **Research orchestrator (`gemini-3.5-flash`):** reads the user's topic/content, optionally grounds it with Google Search, and engineers a precise, text-accurate image-generation prompt.
-2. **Image generator (`gemini-3.1-flash-lite-image`):** renders that prompt directly into a polished infographic PNG.
+2. **Image generator (`gemini-3.1-flash-lite-image` by default):** renders that prompt directly into a polished infographic PNG. The portable skill may use `gemini-3.1-flash-image` via `--image-model` when the caller explicitly chooses quality over latency. The web app remains locked to `gemini-3.1-flash-lite-image`.
 
 After the first draft, an interactive refine loop lets the user iterate ("make the header bolder", "use teal accents") — each turn re-invokes the image model with the previous image plus the edit, saving a new revision in seconds.
 
@@ -29,6 +29,21 @@ The entire workflow lives in `portable_infographic.py`. There are **no browser d
 
 **Security posture:** the Gemini API key is user-provided. If not set via `GEMINI_API_KEY`, the CLI walks the user through getting a free key from Google AI Studio and stores it locally at `~/.config/infographic-agent/config.json` with `0600` permissions. Errors are scrubbed of anything that looks like a credential before printing. If this skill is invoked autonomously, treat `--output` as trusted input — the path is resolved but will write wherever the invoker points it.
 </context>
+
+<loop_contract>
+Run this skill as a bounded human-in-the-loop agent loop:
+
+1. **Intake:** collect topic/content, mode, aspect ratio, output path, and any brand/style constraints.
+2. **Research:** use the research orchestrator unless `--no-research` is set; never invent data points.
+3. **Plan:** produce the exact text strings, layout, palette, and image prompt before rendering.
+4. **Render:** call the image model once for the current plan and save the artifact.
+5. **Review:** stop for human review unless `--yes` was passed.
+6. **Refine:** apply one focused edit per turn, preserving the previous image as state, then return to Review.
+
+Portable state is held locally by the CLI as the current image path plus turn history. Agents that support Gemini Enterprise Agent Platform can replace that local state with the Gemini Interactions API by storing each returned `interaction.id` and passing it as `previousInteractionId` on the next review/refine turn.
+
+Interactions API note: use the unified Google Gen AI SDK (`@google/genai >= 2.0.0` or `google-genai >= 2.0.0`). Legacy packages such as `@google/generative-ai`, `google-generativeai`, `@google-cloud/vertexai`, and `google-cloud-aiplatform` are unsupported for Interactions, and legacy models such as `gemini-2.0-*` and `gemini-1.5-*` are deprecated and unsupported. Turn-scoped settings such as tools, system instructions, and generation config must be sent on every interaction request.
+</loop_contract>
 
 <workflow>
 1. **Identify Request:** Confirm the user wants to generate an infographic.
@@ -77,6 +92,7 @@ python3 skill/infographic-agent/portable_infographic.py \
 - `--mode` — `data-story` (default), `executive-summary`, `technical-deep-dive`, `classroom`, `quick-slide`, `custom`
 - `--aspect` — `1:1`, `9:16` (default), `16:9`, `3:4`, `4:3`, `1:4`
 - `--instructions` — extra styling/content guidance
+- `--image-model` — `gemini-3.1-flash-lite-image` (default) or skill-only `gemini-3.1-flash-image`
 - `--no-research` — skip the research agent and generate directly from the text (faster, no web grounding)
 - `--yes` — non-interactive: generate once and exit (use this when running autonomously or in CI)
 - `--no-open` — do not auto-open the result in an image viewer
@@ -87,7 +103,7 @@ When invoking this skill autonomously (no human at the terminal), always pass `-
 ### Alternative: orchestrate directly with subagents
 If you prefer to orchestrate without the script:
 1. Ask a research/LLM subagent (e.g. `gemini-3.5-flash`) to produce a dense, text-accurate image-generation prompt from the user's content.
-2. Send that prompt to an image model (`gemini-3.1-flash-lite-image`) with `responseModalities: ['TEXT', 'IMAGE']` and save the returned PNG.
+2. Send that prompt to an image model (`gemini-3.1-flash-lite-image` by default; `gemini-3.1-flash-image` for skill-only quality runs) with `responseModalities: ['TEXT', 'IMAGE']` and save the returned PNG.
 3. Provide the link to the user, and offer refinement turns by re-sending the previous image plus the edit instruction.
 </instructions>
 

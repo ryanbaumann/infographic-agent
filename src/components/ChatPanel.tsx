@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, createElement, useMemo, type ReactNode } from 'react';
-import type { ChatMessage, InfographicMode, ThoughtBubble } from '../types';
+import type { ChatMessage, InfographicMode, ThoughtBubble, AgentLoopState } from '../types';
 import { QUICK_ACTIONS, GENERAL_QUICK_ACTIONS } from '../types';
 
 interface ChatPanelProps {
@@ -8,6 +8,7 @@ interface ChatPanelProps {
   onSendMessage: (text: string) => void;
   isRefining: boolean;
   refineThoughts: ThoughtBubble[];
+  agentLoop: AgentLoopState;
 }
 
 /** Parse inline markdown (bold, italic, code) into React nodes */
@@ -101,7 +102,7 @@ function MarkdownContent({ text }: { text: string }) {
   return createElement('div', { className: 'text-xs text-gtext-secondary dark:text-gtext-secondary-dark space-y-0.5' }, ...elements);
 }
 
-export default function ChatPanel({ messages, mode, onSendMessage, isRefining, refineThoughts }: ChatPanelProps) {
+export default function ChatPanel({ messages, mode, onSendMessage, isRefining, refineThoughts, agentLoop }: ChatPanelProps) {
   const [input, setInput] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -151,10 +152,19 @@ export default function ChatPanel({ messages, mode, onSendMessage, isRefining, r
     <div className="w-full lg:w-2/5 lg:min-w-[320px] xl:min-w-[400px] lg:max-w-[520px] flex-shrink-0 flex flex-col bg-white dark:bg-gsurface-card-dark rounded-gcard border border-gborder-light dark:border-gborder-dark shadow-gcard-sm overflow-hidden lg:sticky lg:top-[88px] lg:max-h-[calc(100vh-120px)] lg:self-start">
       {/* Header */}
       <div className="px-4 py-3 border-b border-gborder-light dark:border-gborder-dark">
-        <h3 className="text-sm font-semibold text-gtext-primary dark:text-gtext-primary-dark flex items-center gap-1.5">
-          <span className="material-symbols-outlined text-lg text-gblue-600 dark:text-gblue-300">chat</span>
-          Refine
-        </h3>
+        <div className="flex items-center justify-between gap-3">
+          <h3 className="text-sm font-semibold text-gtext-primary dark:text-gtext-primary-dark flex items-center gap-1.5">
+            <span className="material-symbols-outlined text-lg text-gblue-600 dark:text-gblue-300">chat</span>
+            Review & Refine
+          </h3>
+          <span className="inline-flex items-center gap-1 rounded-gpill bg-gsurface-light dark:bg-gsurface-elevated-dark px-2 py-1 text-[11px] font-medium text-gtext-secondary dark:text-gtext-secondary-dark">
+            <span className="material-symbols-outlined text-sm">{isRefining ? 'sync' : 'person_check'}</span>
+            Turn {agentLoop.turn || 1}
+          </span>
+        </div>
+        <p className="mt-1 text-xs text-gtext-secondary dark:text-gtext-secondary-dark line-clamp-2">
+          {agentLoop.stopRule}
+        </p>
       </div>
 
       {/* Messages */}

@@ -23,11 +23,11 @@ The SDK types do not always support newer parameters. Use the `as any` cast patt
 
 ### Model Capabilities & Thinking Levels
 - **`gemini-3.5-flash`** (default orchestrator): Supports detailed reasoning. Configured with `thinkingConfig: { thinkingLevel: 'HIGH' }` for layout planning.
-- **`gemini-3.1-flash-lite-image`** (default image generator/refiner): Optimized for faster image generation (3-5 seconds) with native image generation and refinement. This is the recommended model for most use cases due to its speed. Supports thinking config for streaming thoughts but **rejects `thinkingLevel: 'LOW'`** with a 400 error. It must be configured with `thinkingLevel: 'HIGH'` to return thought streams properly.
+- **`gemini-3.1-flash-lite-image`** (required web-app image generator/refiner): Optimized for faster image generation (3-5 seconds) with native image generation and refinement. The web app keeps this model fixed for predictable latency and tool compatibility. Supports thinking config for streaming thoughts but **rejects `thinkingLevel: 'LOW'`** with a 400 error. It must be configured with `thinkingLevel: 'HIGH'` to return thought streams properly.
   - **Behavior**: Consistently generates valid PNG images at any aspect ratio
   - **Limitations**: Slightly lower fidelity on text rendering compared to Flash (but still acceptable for most infographics)
-  - **Recommendation**: Use for rapid iteration and user-facing workflows
-- **`gemini-3.1-flash-image`** (alternative for quality-focused workflows): Provides enhanced quality for complex infographics with more accurate text rendering and visual fidelity. Use this when fast iteration is less important than output fidelity (8-12 seconds per generation).
+  - **Recommendation**: Use for rapid iteration and all web-app image workflows
+- **`gemini-3.1-flash-image`** (portable skill quality option only): Provides enhanced quality for skill/CLI workflows where the caller explicitly chooses output fidelity over latency. Do not expose this model in the web app.
 - **Thinking Part Filtering**: When thinking is enabled, the model returns thoughts alongside the regular text parts. Always filter out the thought parts to parse the output JSON or text correctly:
   ```typescript
   const parts = response.candidates?.[0]?.content?.parts || [];
@@ -82,6 +82,12 @@ The SDK types do not always support newer parameters. Use the `as any` cast patt
 - Storing multiple high-resolution base64 images in `localStorage` quickly triggers `QuotaExceededError` (5MB limit).
 - **Solution**: Adopt IndexedDB via `localforage` for persistent storage of infographic history. This bypasses the 5MB storage limit and supports large image blobs.
 - **Migration Safeguard**: Ensure a fallback schema merge when loading settings, preventing stale configurations from breaking the application when default models or settings are updated.
+
+### Browser State vs Enterprise Interactions State
+- **Context:** The app is a static, browser-only SPA where users supply AI Studio Gemini API keys, but the portable/enterprise agent story also needs durable multi-turn state and HITL iteration.
+- **Learning:** Keep the web app's loop state explicit and local (`AgentLoopState`, chat history, current image, IndexedDB revisions). Do not call the Gemini Enterprise Interactions API directly from the browser path unless the product adds an Enterprise auth/runtime layer.
+- **Evidence:** `src/hooks/useInfographicFlow.ts` updates loop phases and turn state locally; `docs/architecture.md` documents the `previousInteractionId` adapter for Enterprise Agent Platform.
+- **Use next time:** Preserve the same intake -> research -> plan -> render -> review -> refine contract across app, CLI skill, and Enterprise adapters, but choose the state backend that matches the runtime.
 
 ---
 
@@ -304,7 +310,7 @@ This ordering can reduce prompt processing cost by 10-20% on repeated requests.
 - **Thought streams**: Returns thoughts when `includeThoughts: true`, must filter in parsing
 - **Image output**: Requires `responseModalities: ['TEXT', 'IMAGE']` in config
 - **Aspect ratios**: Supports any aspect ratio (16:9, 1:1, 21:9, etc.) via `imageConfig`
-- **Resolutions**: Supports 1K-4K; higher resolutions = longer generation (~2x slower at 4K)
+- **Resolutions**: The web app exposes only 0.5K, 1K, and 2K. For `gemini-3.1-flash-lite-image`, 0.5K and higher web choices map to the model's supported 1K request size.
 - **Text fidelity**: Good but not perfect; prefer verbatim quotes from Agent 1
 - **Generation time**: 3-5 seconds typical, up to 15 seconds on overload
 

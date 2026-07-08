@@ -138,6 +138,7 @@ export default function App() {
             thoughtBubbles={state.thoughtBubbles}
             chatMessages={state.chatMessages}
             refineThoughts={state.refineThoughts}
+            agentLoop={state.agentLoop}
             mode={state.config.mode}
             aspectRatio={state.config.aspectRatio}
             onOpenSettings={() => setShowAdmin(true)}

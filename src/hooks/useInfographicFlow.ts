@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import type { AppState, InfographicConfig, AdminConfig, UploadedFile, GenerationResult, ThoughtBubble, ChatMessage, ImageResolution } from '../types';
+import type { AppState, InfographicConfig, AdminConfig, UploadedFile, GenerationResult, ThoughtBubble, ChatMessage, ImageResolution, AgentLoopPhaseId, AgentLoopState } from '../types';
 import { DEFAULT_ADMIN_CONFIG, DEFAULT_INFOGRAPHIC_CONFIG, MAX_FILES, MAX_FILE_SIZE_MB, MAX_TOTAL_SIZE_MB } from '../types';
 import type { StepType } from '../types';
 import { processFile } from '../services/fileProcessor';
@@ -25,6 +25,70 @@ const THEME_STORAGE_KEY = 'infographic-theme';
 const HISTORY_STORAGE_KEY = 'infographic-history';
 const CONFIG_STORAGE_KEY = 'infographic-user-config';
 const HAS_VISITED_KEY = 'infographic-has-visited';
+const SUPPORTED_RESOLUTIONS: ImageResolution[] = ['0.5K', '1K', '2K'];
+
+const LOOP_PHASES: Array<{ id: AgentLoopPhaseId; label: string; detail: string }> = [
+  { id: 'intake', label: 'Intake', detail: 'Collect source files, URLs, text, and generation preferences.' },
+  { id: 'research', label: 'Research', detail: 'Ground claims with uploaded content, Google Search, and URL context when needed.' },
+  { id: 'plan', label: 'Plan', detail: 'Finalize text, facts, layout hierarchy, palette, and image prompt.' },
+  { id: 'render', label: 'Render', detail: 'Send the verified prompt and references to the image model.' },
+  { id: 'review', label: 'Review', detail: 'Hold the current artifact for human approval or targeted feedback.' },
+  { id: 'refine', label: 'Refine', detail: 'Apply one requested edit while preserving unchanged content.' },
+];
+
+function createAgentLoopState({
+  sessionId = `loop_${Date.now()}`,
+  turn = 0,
+  activePhase = 'intake',
+  goal = 'Create an infographic from user-provided context.',
+  stopRule = 'Stop after a rendered draft; continue only when the user asks for a refinement.',
+  hitlStatus,
+  interactionId,
+  previousInteractionId,
+}: {
+  sessionId?: string;
+  turn?: number;
+  activePhase?: AgentLoopPhaseId;
+  goal?: string;
+  stopRule?: string;
+  hitlStatus?: AgentLoopState['hitlStatus'];
+  interactionId?: string;
+  previousInteractionId?: string;
+} = {}): AgentLoopState {
+  const activeIndex = LOOP_PHASES.findIndex(phase => phase.id === activePhase);
+  const phases = LOOP_PHASES.map((phase, index) => {
+    let status: AgentLoopState['phases'][number]['status'] = 'pending';
+    if (activePhase === 'refine') {
+      status = phase.id === 'refine' ? 'active' : 'complete';
+    } else if (activeIndex >= 0) {
+      if (index < activeIndex) status = 'complete';
+      if (index === activeIndex) status = 'active';
+    }
+    return { ...phase, status };
+  });
+
+  return {
+    sessionId,
+    turn,
+    goal,
+    stopRule,
+    stateBackend: 'browser-local',
+    hitlStatus: hitlStatus ?? (activePhase === 'review' ? 'awaiting-input' : 'running'),
+    interactionId,
+    previousInteractionId,
+    phases,
+  };
+}
+
+function buildLoopGoal(config: InfographicConfig, filesCount: number): string {
+  return `Create a ${config.mode} infographic from ${filesCount} source ${filesCount === 1 ? 'item' : 'items'}.`;
+}
+
+function normalizeResolution(value: unknown): ImageResolution {
+  return SUPPORTED_RESOLUTIONS.includes(value as ImageResolution)
+    ? value as ImageResolution
+    : DEFAULT_INFOGRAPHIC_CONFIG.resolution;
+}
 
 function loadHasVisited(): boolean {
   try {
@@ -40,10 +104,6 @@ function safePersist(key: string, value: string): void {
   }
 }
 
-const isMasterView = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('view') === 'master';
-const isProdDeploy = import.meta.env.PROD || import.meta.env.VITE_PRODUCTION_DEPLOY === 'true';
-const allowQualityModel = isMasterView && !isProdDeploy;
-
 function loadAdminConfig(): AdminConfig {
   try {
     const stored = localStorage.getItem(ADMIN_STORAGE_KEY);
@@ -51,14 +111,9 @@ function loadAdminConfig(): AdminConfig {
       const parsed = JSON.parse(stored);
       // Enforce gemini-3.5-flash as the default and only supported analysis model
       parsed.orchestratorModel = 'gemini-3.5-flash';
-      // Enforce gemini-3.1-flash-lite-image if quality model is not allowed
-      if (!allowQualityModel) {
-        parsed.imageGenModel = 'gemini-3.1-flash-lite-image';
-      } else {
-        if (parsed.imageGenModel === 'gemini-3.1-flash-image-preview') {
-          parsed.imageGenModel = 'gemini-3.1-flash-image';
-        }
-      }
+      // Enforce gemini-3.1-flash-lite-image as the only supported image model
+      parsed.imageGenModel = 'gemini-3.1-flash-lite-image';
+      parsed.imageResolution = normalizeResolution(parsed.imageResolution);
       return { ...DEFAULT_ADMIN_CONFIG, ...parsed };
     }
   } catch { /* ignore */ }
@@ -76,7 +131,11 @@ function loadTheme(): 'light' | 'dark' {
 function loadUserConfig(): InfographicConfig {
   try {
     const stored = localStorage.getItem(CONFIG_STORAGE_KEY);
-    if (stored) return { ...DEFAULT_INFOGRAPHIC_CONFIG, ...JSON.parse(stored) };
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      parsed.resolution = normalizeResolution(parsed.resolution);
+      return { ...DEFAULT_INFOGRAPHIC_CONFIG, ...parsed };
+    }
   } catch { /* ignore */ }
   return { ...DEFAULT_INFOGRAPHIC_CONFIG };
 }
@@ -105,6 +164,7 @@ const initialState: AppState = {
   chatMessages: [],
   refineThoughts: [],
   isProcessingFiles: false,
+  agentLoop: createAgentLoopState({ hitlStatus: 'not-started' }),
 };
 
 export function useInfographicFlow() {
@@ -203,7 +263,23 @@ export function useInfographicFlow() {
   }, []);
 
   const handleGenerate = useCallback(async () => {
-    setState(s => ({ ...s, step: 'studio', generationPhase: 'preparing', error: null, streamingText: '', thoughtBubbles: [], refineThoughts: [], chatMessages: [] }));
+    const sessionId = `loop_${Date.now()}`;
+    setState(s => ({
+      ...s,
+      step: 'studio',
+      generationPhase: 'preparing',
+      error: null,
+      streamingText: '',
+      thoughtBubbles: [],
+      refineThoughts: [],
+      chatMessages: [],
+      agentLoop: createAgentLoopState({
+        sessionId,
+        turn: 1,
+        activePhase: 'research',
+        goal: buildLoopGoal(state.config, state.files.length),
+      }),
+    }));
 
     try {
       localStorage.setItem(HAS_VISITED_KEY, 'true');
@@ -225,7 +301,18 @@ export function useInfographicFlow() {
       };
 
       const prepResult = await prepareInfographic(state.files, state.config, state.adminConfig, onThought);
-      setState(s => ({ ...s, prepareResult: prepResult, streamingText: 'Preparation complete. Generating image...' }));
+      setState(s => ({
+        ...s,
+        prepareResult: prepResult,
+        streamingText: 'Preparation complete. Generating image...',
+        agentLoop: createAgentLoopState({
+          sessionId: s.agentLoop.sessionId,
+          turn: s.agentLoop.turn,
+          activePhase: 'render',
+          goal: s.agentLoop.goal,
+          stopRule: s.agentLoop.stopRule,
+        }),
+      }));
 
       // Phase 2: Generate image
       setState(s => ({ ...s, generationPhase: 'generating', streamingText: 'Generating infographic...' }));
@@ -265,6 +352,14 @@ export function useInfographicFlow() {
         streamingText: '',
         history: [historyEntry, ...s.history].slice(0, 20),
         chatMessages: [firstMessage],
+        agentLoop: createAgentLoopState({
+          sessionId: s.agentLoop.sessionId,
+          turn: s.agentLoop.turn,
+          activePhase: 'review',
+          goal: s.agentLoop.goal,
+          stopRule: 'Stop here unless the user requests a focused refinement.',
+          hitlStatus: 'awaiting-input',
+        }),
       }));
     } catch (err) {
       setState(s => ({
@@ -273,6 +368,14 @@ export function useInfographicFlow() {
         step: 'create',
         generationPhase: 'idle',
         streamingText: '',
+        agentLoop: createAgentLoopState({
+          sessionId: s.agentLoop.sessionId,
+          turn: s.agentLoop.turn,
+          activePhase: 'intake',
+          goal: s.agentLoop.goal,
+          stopRule: 'Resolve the error or adjust source inputs before restarting.',
+          hitlStatus: 'awaiting-input',
+        }),
       }));
     }
   }, [state.files, state.config, state.adminConfig]);
@@ -286,7 +389,20 @@ export function useInfographicFlow() {
       text: instruction,
       timestamp: Date.now(),
     };
-    setState(s => ({ ...s, error: null, streamingText: 'Refining infographic...', chatMessages: [...s.chatMessages, userMsg], refineThoughts: [] }));
+    setState(s => ({
+      ...s,
+      error: null,
+      streamingText: 'Refining infographic...',
+      chatMessages: [...s.chatMessages, userMsg],
+      refineThoughts: [],
+      agentLoop: createAgentLoopState({
+        sessionId: s.agentLoop.sessionId,
+        turn: s.agentLoop.turn + 1,
+        activePhase: 'refine',
+        goal: `Apply focused edit: ${instruction.slice(0, 80)}`,
+        stopRule: 'Stop after this edit is rendered and reviewed.',
+      }),
+    }));
 
     try {
       const onRefineThought = (thought: string) => {
@@ -368,12 +484,28 @@ export function useInfographicFlow() {
         history: [historyEntry, ...s.history].slice(0, 20),
         chatMessages: [...s.chatMessages, assistantMsg],
         refineThoughts: [],
+        agentLoop: createAgentLoopState({
+          sessionId: s.agentLoop.sessionId,
+          turn: s.agentLoop.turn,
+          activePhase: 'review',
+          goal: s.agentLoop.goal,
+          stopRule: 'Stop here unless the user requests another focused refinement.',
+          hitlStatus: 'awaiting-input',
+        }),
       }));
     } catch (err) {
       setState(s => ({
         ...s,
         error: (err as Error).message,
         streamingText: '',
+        agentLoop: createAgentLoopState({
+          sessionId: s.agentLoop.sessionId,
+          turn: s.agentLoop.turn,
+          activePhase: 'review',
+          goal: s.agentLoop.goal,
+          stopRule: 'Resolve the failed refinement or request a narrower edit.',
+          hitlStatus: 'awaiting-input',
+        }),
       }));
     }
   }, [state.currentResult, state.adminConfig, state.config, state.chatMessages, state.prepareResult]);
@@ -393,7 +525,20 @@ export function useInfographicFlow() {
       text: `Upgrade resolution to ${res}`,
       timestamp: Date.now(),
     };
-    setState(s => ({ ...s, error: null, streamingText: `Upgrading to ${res} resolution...`, chatMessages: [...s.chatMessages, userMsg], refineThoughts: [] }));
+    setState(s => ({
+      ...s,
+      error: null,
+      streamingText: `Upgrading to ${res} resolution...`,
+      chatMessages: [...s.chatMessages, userMsg],
+      refineThoughts: [],
+      agentLoop: createAgentLoopState({
+        sessionId: s.agentLoop.sessionId,
+        turn: s.agentLoop.turn + 1,
+        activePhase: 'refine',
+        goal: `Upgrade the current infographic to ${res} resolution.`,
+        stopRule: 'Stop after the higher-resolution render is available for review.',
+      }),
+    }));
 
     try {
       const onRefineThought = (thought: string) => {
@@ -473,12 +618,28 @@ export function useInfographicFlow() {
         history: [historyEntry, ...s.history].slice(0, 20),
         chatMessages: [...s.chatMessages, assistantMsg],
         refineThoughts: [],
+        agentLoop: createAgentLoopState({
+          sessionId: s.agentLoop.sessionId,
+          turn: s.agentLoop.turn,
+          activePhase: 'review',
+          goal: s.agentLoop.goal,
+          stopRule: 'Stop here unless the user requests another focused refinement.',
+          hitlStatus: 'awaiting-input',
+        }),
       }));
     } catch (err) {
       setState(s => ({
         ...s,
         error: (err as Error).message,
         streamingText: '',
+        agentLoop: createAgentLoopState({
+          sessionId: s.agentLoop.sessionId,
+          turn: s.agentLoop.turn,
+          activePhase: 'review',
+          goal: s.agentLoop.goal,
+          stopRule: 'Resolve the failed resolution upgrade or request a lower resolution.',
+          hitlStatus: 'awaiting-input',
+        }),
       }));
     }
   }, [state.currentResult, state.adminConfig, state.config, updateAdminConfig, updateConfig, state.chatMessages, state.prepareResult]);
@@ -499,9 +660,17 @@ export function useInfographicFlow() {
     setState(s => ({
       ...s,
       currentResult: result,
-      config: entry.config,
+      config: { ...entry.config, resolution: normalizeResolution(entry.config.resolution) },
       step: 'studio',
       generationPhase: 'complete',
+      agentLoop: createAgentLoopState({
+        sessionId: `history_${entry.id}`,
+        turn: 1,
+        activePhase: 'review',
+        goal: `Review saved infographic: ${entry.title}`,
+        stopRule: 'Stop here unless the user requests a focused refinement.',
+        hitlStatus: 'awaiting-input',
+      }),
     }));
   }, []);
 
@@ -575,6 +744,7 @@ Source: Global AI Index 2026 Report`;
       thoughtBubbles: [],
       chatMessages: [],
       refineThoughts: [],
+      agentLoop: createAgentLoopState({ hitlStatus: 'not-started' }),
     }));
   }, []);
 

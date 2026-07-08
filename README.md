@@ -26,7 +26,7 @@ Upload a PDF, paste a URL, or just describe a topic — a two-agent Gemini pipel
 
 - **Multi-format input** — PDF, CSV/spreadsheets, images (PNG/JPEG/WebP/HEIC), plain text, or just a topic description
 - **6 infographic modes** — Data Story, Executive Summary, Classroom Explainer, Technical Deep-Dive, Quick Slide, and fully Custom
-- **Configurable output** — 6 aspect ratios (square, portrait, landscape, and more) and resolution from 0.5K up to 4K
+- **Configurable output** — 6 aspect ratios (square, portrait, landscape, and more) and resolution from 0.5K up to 2K
 - **Live "thought" stream** — watch the agent's reasoning render as streaming cards while it researches and designs
 - **Multi-turn refinement chat** — keep talking to the agent to tweak colors, layout, or content after the first draft
 - **Before/after slider** — compare each revision against the original at a glance
@@ -107,6 +107,7 @@ The CLI options and flags are shared between the `npx infographic-agent` command
 | `--mode` | `-m` | Preset layout and style theme for the infographic. | `data-story`<br>Choices: `classroom`, `custom`, `data-story`, `executive-summary`, `quick-slide`, `technical-deep-dive` |
 | `--aspect` | `-a` | Aspect ratio of the generated infographic image. | `9:16`<br>Choices: `1:1`, `1:4`, `3:4`, `4:3`, `9:16`, `16:9` |
 | `--instructions` | `-i` | Custom layout, design, or style rules (e.g. brand hex colors, font preferences). | `""` |
+| `--image-model` | *None* | Image model for the portable skill. The web app remains locked to `gemini-3.1-flash-lite-image`. | `gemini-3.1-flash-lite-image`<br>Choices: `gemini-3.1-flash-lite-image`, `gemini-3.1-flash-image` |
 | `--no-research` | *None* | Skip the research agent and generate directly from your text (faster, doesn't use Google Search). | *Flag* |
 | `--no-open` | *None* | Do not auto-open the generated infographic image in the default system viewer. | *Flag* |
 | `--yes` | `-y` | Non-interactive execution. Generates once and exits immediately without entering the refine loop. | *Flag* (best for CI or autonomous agents) |
@@ -325,6 +326,5 @@ infographic-agent/
 
 - **App keeps asking for an API key** — get a free one at [aistudio.google.com/apikey](https://aistudio.google.com/apikey) and either put it in `.env` as `VITE_GEMINI_API_KEY` (dev) or paste it into the settings panel (it's stored in your browser only).
 - **"File exceeds maximum size" / files silently skipped** — individual files are capped at 20MB, 50MB total per generation, up to 14 files; split large PDFs or compress images.
-- **Generation feels slow** — the analysis agent may search the web or read large files before the image agent starts rendering; watch the thought stream, it's usually still working, not stuck. Higher resolutions (3K/4K) also take longer.
+- **Generation feels slow** — the analysis agent may search the web or read large files before the image agent starts rendering; watch the thought stream, it's usually still working, not stuck. Use 0.5K or 1K for faster web-app iteration, then upgrade to 2K when the layout is approved.
 - **`npm run dev` prints `spawn xdg-open ENOENT`** — harmless in headless environments (SSH, containers, CI): the server is running fine, there's just no browser to auto-open. Visit `http://localhost:3456` yourself.
-

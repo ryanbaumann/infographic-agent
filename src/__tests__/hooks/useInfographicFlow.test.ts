@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { useInfographicFlow } from '../../hooks/useInfographicFlow';
 import { DEFAULT_INFOGRAPHIC_CONFIG, DEFAULT_ADMIN_CONFIG } from '../../types';
+import * as geminiService from '../../services/geminiService';
 
 // Mock the services
 vi.mock('../../services/fileProcessor', () => ({
@@ -19,6 +20,8 @@ vi.mock('../../services/geminiService', () => ({
   prepareInfographic: vi.fn(),
   generateInfographic: vi.fn(),
   generateFilename: vi.fn(),
+  refineInfographic: vi.fn(),
+  incrementTrialTurns: vi.fn(),
 }));
 
 vi.mock('../../services/downloadService', () => ({
@@ -47,6 +50,7 @@ describe('useInfographicFlow', () => {
       expect(result.current.state.generationPhase).toBe('idle');
       expect(result.current.state.error).toBeNull();
       expect(result.current.state.theme).toBe('light');
+      expect(result.current.state.agentLoop.hitlStatus).toBe('not-started');
     });
 
     // Skipped: initialState is computed at module import, before the test can
@@ -73,6 +77,30 @@ describe('useInfographicFlow', () => {
       const { result } = renderHook(() => useInfographicFlow());
 
       expect(result.current.state.adminConfig.geminiApiKey).toBe('test-key-123');
+    });
+
+    it('should enforce supported models from stale stored admin config', async () => {
+      localStorage.setItem('infographic-admin-config', JSON.stringify({
+        geminiApiKey: 'test-key-123',
+        orchestratorModel: 'gemini-3-flash-preview',
+        imageGenModel: 'gemini-3.1-flash-image',
+        thinkingLevel: 'HIGH',
+        imageResolution: '4K',
+        timeoutSeconds: 180,
+      }));
+      localStorage.setItem('infographic-user-config', JSON.stringify({
+        ...DEFAULT_INFOGRAPHIC_CONFIG,
+        resolution: '4K',
+      }));
+
+      vi.resetModules();
+      const { useInfographicFlow: useFreshInfographicFlow } = await import('../../hooks/useInfographicFlow');
+      const { result } = renderHook(() => useFreshInfographicFlow());
+
+      expect(result.current.state.adminConfig.orchestratorModel).toBe('gemini-3.5-flash');
+      expect(result.current.state.adminConfig.imageGenModel).toBe('gemini-3.1-flash-lite-image');
+      expect(result.current.state.adminConfig.imageResolution).toBe('0.5K');
+      expect(result.current.state.config.resolution).toBe('0.5K');
     });
   });
 
@@ -274,6 +302,86 @@ describe('useInfographicFlow', () => {
 
       const visited = localStorage.getItem('infographic-has-visited');
       expect(visited).not.toBe('true');
+    });
+  });
+
+  describe('agent loop state', () => {
+    beforeEach(() => {
+      vi.mocked(geminiService.prepareInfographic).mockResolvedValue({
+        analysis: {
+          title: 'Loop Test',
+          subtitle: 'Stateful generation',
+          sectionsCount: 1,
+          dataPointsCount: 1,
+          brandColors: ['#4285F4'],
+          sourceAttribution: 'Uploaded content',
+        },
+        prompt: 'Generate a professional infographic image for loop testing.',
+        allTextStrings: ['Loop Test'],
+      });
+      vi.mocked(geminiService.generateInfographic).mockResolvedValue({
+        imageData: 'mock-image',
+        description: 'Generated draft',
+        prompt: 'Generate a professional infographic image for loop testing.',
+      });
+      vi.mocked(geminiService.generateFilename).mockResolvedValue('loop-test');
+      vi.mocked(geminiService.refineInfographic).mockResolvedValue({
+        imageData: 'mock-image-v2',
+        description: 'Refined draft',
+        prompt: 'Make the title larger',
+      });
+    });
+
+    it('moves a completed generation into human review', async () => {
+      const { result } = renderHook(() => useInfographicFlow());
+
+      await act(async () => {
+        await result.current.handleGenerate();
+      });
+
+      await waitFor(() => {
+        expect(result.current.state.generationPhase).toBe('complete');
+      });
+
+      expect(result.current.state.agentLoop.turn).toBe(1);
+      expect(result.current.state.agentLoop.hitlStatus).toBe('awaiting-input');
+      expect(result.current.state.agentLoop.phases.find(phase => phase.id === 'review')?.status).toBe('active');
+      expect(result.current.state.agentLoop.phases.find(phase => phase.id === 'render')?.status).toBe('complete');
+    });
+
+    it('advances the loop turn for a focused refinement', async () => {
+      const { result } = renderHook(() => useInfographicFlow());
+
+      await act(async () => {
+        await result.current.handleGenerate();
+      });
+
+      await waitFor(() => {
+        expect(result.current.state.currentResult?.imageData).toBe('mock-image');
+      });
+
+      const sessionId = result.current.state.agentLoop.sessionId;
+
+      await act(async () => {
+        await result.current.handleRefine('Make the title larger');
+      });
+
+      await waitFor(() => {
+        expect(result.current.state.currentResult?.imageData).toBe('mock-image-v2');
+      });
+
+      expect(result.current.state.agentLoop.sessionId).toBe(sessionId);
+      expect(result.current.state.agentLoop.turn).toBe(2);
+      expect(result.current.state.agentLoop.hitlStatus).toBe('awaiting-input');
+      expect(result.current.state.agentLoop.phases.find(phase => phase.id === 'review')?.status).toBe('active');
+      expect(geminiService.refineInfographic).toHaveBeenCalledWith(
+        'mock-image',
+        'Make the title larger',
+        expect.any(Object),
+        expect.any(Object),
+        expect.any(Function),
+        expect.any(Array)
+      );
     });
   });
 

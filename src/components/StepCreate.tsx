@@ -25,8 +25,6 @@ const RESOLUTION_OPTIONS: { label: string; shortLabel: string; value: ImageResol
   { label: 'Default 0.5K', shortLabel: '0.5K', value: '0.5K' },
   { label: 'Fast 1K', shortLabel: '1K', value: '1K' },
   { label: 'Standard 2K', shortLabel: '2K', value: '2K' },
-  { label: 'Ultra 3K', shortLabel: '3K', value: '3K' },
-  { label: 'High 4K', shortLabel: '4K', value: '4K' },
 ];
 
 function getCategoryIcon(category: string): string {
@@ -272,7 +270,8 @@ export default function StepCreate({
               { icon: 'link', label: 'Visit URLs' },
               { icon: 'search', label: 'Google Search' },
               { icon: 'analytics', label: 'Analyze data' },
-              { icon: 'auto_awesome', label: 'AI research' },
+              { icon: 'route', label: 'Plan then render' },
+              { icon: 'person_check', label: 'HITL refine' },
             ].map((cap) => (
               <span
                 key={cap.label}

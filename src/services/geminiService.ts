@@ -505,7 +505,6 @@ function mapResolutionToApi(res: string, model: string): string {
     return '1K';
   }
   if (res === '0.5K') return '1K'; // '512' is not supported by Gemini image generation models
-  if (res === '3K') return '2K'; // Fallback for unsupported 3K
   return res;
 }
 

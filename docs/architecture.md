@@ -51,6 +51,52 @@ The infographic generation process is structured in three primary stages to opti
                   └───────────────────────────────┘
 ```
 
+The web app exposes this as a bounded agent loop rather than a plain loading state:
+
+| Loop phase | Responsibility | Stop / handoff condition |
+| --- | --- | --- |
+| Intake | Collect files, pasted text, URLs, mode, aspect ratio, and quality settings. | User starts generation. |
+| Research | Ground claims against uploaded content, Google Search, and URL context. | Enough attributable facts exist for a plan. |
+| Plan | Finalize exact text strings, layout hierarchy, colors, and prompt. | Structured `PrepareResult` parses successfully. |
+| Render | Send the engineered prompt and reference images to the image model. | A valid image response is returned. |
+| Review | Hold the current artifact for human approval or feedback. | Stop unless the user requests a targeted edit. |
+| Refine | Apply one focused edit using the current image and chat history. | Return to Review with a new revision. |
+
+This contract is represented in the app as `AgentLoopState` (`src/types.ts`) and updated by `useInfographicFlow.ts`. It keeps a stable `sessionId`, a monotonic `turn`, a user-visible `goal`, a `stopRule`, phase statuses, and a state backend label. The browser build currently uses `stateBackend: "browser-local"` because the app has no server component and users bring an AI Studio Gemini API key. Chat history, current image state, and generated revisions are preserved in React state and IndexedDB.
+
+### Enterprise Interactions API Adapter
+
+For Gemini Enterprise Agent Platform deployments, the same loop can be backed by the stateful Gemini Interactions API instead of browser-local chat history. That adapter should persist the returned `interaction.id` and pass it as `previousInteractionId` on the next HITL turn:
+
+```typescript
+import { GoogleGenAI } from '@google/genai';
+
+const ai = new GoogleGenAI({
+  enterprise: {
+    project: 'your-project-id',
+    location: 'global',
+  },
+});
+
+const turn1 = await ai.interactions.create({
+  model: 'gemini-3.5-flash',
+  input: 'Research and plan an infographic from the supplied source package.',
+  store: true,
+  tools: [{ googleSearch: {} }, { urlContext: {} }],
+  systemInstruction: prepareSystemInstruction,
+});
+
+const turn2 = await ai.interactions.create({
+  model: 'gemini-3.5-flash',
+  input: 'Apply the user review: make the title larger.',
+  previousInteractionId: turn1.id,
+  store: true,
+  systemInstruction: refineSystemInstruction,
+});
+```
+
+Interactions require the unified Google Gen AI SDK (`@google/genai >= 2.0.0` or `google-genai >= 2.0.0`). Legacy packages such as `@google/generative-ai`, `google-generativeai`, `@google-cloud/vertexai`, and `google-cloud-aiplatform` are unsupported for Interactions. Legacy models such as `gemini-2.0-*` and `gemini-1.5-*` are deprecated and unsupported for Interactions. Parameters like `tools`, `systemInstruction`, and generation settings are turn-scoped, so the adapter must send them with every interaction request. Keep the repo's model contract intact: `gemini-3.5-flash` for research/planning and `gemini-3.1-flash-lite-image` for web-app image rendering.
+
 ---
 
 ## 2. Agent 1: Prepare (Content Analysis & Layout Planning)
@@ -189,7 +235,7 @@ const response = await client.models.generateContent('gemini-3.1-flash-lite-imag
   },
   imageConfig: {
     aspectRatio: '16:9',
-    resolution: '1024x576',  // Configurable: 1K-4K
+    resolution: '1024x576',  // Web app choices: 0.5K, 1K, or 2K
   },
   thinkingConfig: {
     thinkingLevel: 'HIGH',      // For debugging
@@ -200,15 +246,15 @@ const response = await client.models.generateContent('gemini-3.1-flash-lite-imag
 
 ### Model Selection
 
-- **Primary**: `gemini-3.1-flash-lite-image` (default, 3-5 seconds, good balance)
-- **Alternative**: `gemini-3.1-flash-image` (higher quality, slower, 8-12 seconds)
-- **Performance**: Flash Lite produces quality output 40% faster than Flash
+- **Web app image model**: `gemini-3.1-flash-lite-image` only, for predictable latency and tool compatibility.
+- **Portable skill option**: `gemini-3.1-flash-image` may be used by skill/CLI workflows that explicitly choose quality over latency.
+- **Analysis model**: `gemini-3.5-flash` only, because search and URL-context tools belong in the research/planning phase.
 
 ### Key Capabilities
 
 1. **Native Image Generation**
    - Renders PNG images at specified aspect ratios and resolutions
-   - Supports 1K (1024x576), 2K (2048x1152), and 4K (4096x2304) resolutions
+   - Web app exposes 0.5K, 1K, and 2K only; 0.5K maps to the model's supported 1K request size
 
 2. **Layout Enforcement**
    - Follows step-by-step spatial instructions from Agent 1
