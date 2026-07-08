@@ -90,6 +90,19 @@ function normalizeResolution(value: unknown): ImageResolution {
     : DEFAULT_INFOGRAPHIC_CONFIG.resolution;
 }
 
+function buildFallbackFilename(title: string | undefined): string {
+  const normalized = (title || 'infographic')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .split('-')
+    .filter(Boolean)
+    .slice(0, 5)
+    .join('-');
+
+  return normalized || `infographic-${Date.now()}`;
+}
+
 function loadHasVisited(): boolean {
   try {
     return localStorage.getItem(HAS_VISITED_KEY) === 'true';
@@ -317,11 +330,13 @@ export function useInfographicFlow() {
       // Phase 2: Generate image
       setState(s => ({ ...s, generationPhase: 'generating', streamingText: 'Generating infographic...' }));
       const referenceImages = state.files.filter(f => f.category === 'image').slice(0, 3);
-      const [result, filename] = await Promise.all([
-        generateInfographic(prepResult.prompt, referenceImages, { ...state.config, resolution: state.adminConfig.imageResolution || state.config.resolution }, state.adminConfig),
-        generateFilename(prepResult.prompt, state.adminConfig)
-      ]);
-      result.filename = filename;
+      const result = await generateInfographic(
+        prepResult.prompt,
+        referenceImages,
+        { ...state.config, resolution: state.adminConfig.imageResolution || state.config.resolution },
+        state.adminConfig
+      );
+      result.filename = buildFallbackFilename(prepResult.analysis.title);
 
       const historyEntry = {
         id: `history_${Date.now()}`,
@@ -361,6 +376,24 @@ export function useInfographicFlow() {
           hitlStatus: 'awaiting-input',
         }),
       }));
+
+      void generateFilename(prepResult.prompt, state.adminConfig)
+        .then((filename) => {
+          if (!filename || filename === result.filename) return;
+          setState(s => {
+            const shouldUpdateCurrent = s.currentResult?.imageData === result.imageData && s.agentLoop.sessionId === sessionId;
+            return {
+              ...s,
+              currentResult: shouldUpdateCurrent && s.currentResult
+                ? { ...s.currentResult, filename }
+                : s.currentResult,
+              history: s.history.map(entry => entry.id === historyEntry.id ? { ...entry, filename } : entry),
+            };
+          });
+        })
+        .catch(() => {
+          // Filename generation is a convenience sidecar, not part of the render loop.
+        });
     } catch (err) {
       setState(s => ({
         ...s,

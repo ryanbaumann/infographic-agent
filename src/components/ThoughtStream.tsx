@@ -172,6 +172,9 @@ function LoopStatus({ agentLoop }: { agentLoop: AgentLoopState }) {
 
 export default function ThoughtStream({ thoughts, phase, elapsed, prepareResult, agentLoop }: ThoughtStreamProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const qualityChecks = prepareResult?.qualityChecks ?? [];
+  const passedQualityChecks = qualityChecks.filter(check => check.status === 'pass').length;
+  const warningQualityChecks = qualityChecks.filter(check => check.status === 'warn').length;
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -225,6 +228,20 @@ export default function ThoughtStream({ thoughts, phase, elapsed, prepareResult,
             <p className="text-xs text-gtext-secondary dark:text-gtext-secondary-dark mt-1">
               {prepareResult.analysis.sectionsCount} sections, {prepareResult.analysis.dataPointsCount} data points
             </p>
+            {qualityChecks.length > 0 && (
+              <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                <span className="inline-flex items-center gap-1 rounded-gpill bg-gsuccess-50 dark:bg-gsuccess/10 px-2 py-0.5 text-[11px] font-medium text-gsuccess-600 dark:text-gsuccess">
+                  <span className="material-symbols-outlined text-sm">verified</span>
+                  {passedQualityChecks}/{qualityChecks.length} evals passed
+                </span>
+                {warningQualityChecks > 0 && (
+                  <span className="inline-flex items-center gap-1 rounded-gpill bg-gwarning-50 dark:bg-gwarning/10 px-2 py-0.5 text-[11px] font-medium text-gwarning dark:text-gwarning">
+                    <span className="material-symbols-outlined text-sm">warning</span>
+                    {warningQualityChecks} warning{warningQualityChecks === 1 ? '' : 's'}
+                  </span>
+                )}
+              </div>
+            )}
             {prepareResult.analysis.brandColors.length > 0 && (
               <div className="flex items-center gap-1.5 mt-1.5">
                 <span className="text-xs text-gtext-secondary dark:text-gtext-secondary-dark">Colors:</span>
