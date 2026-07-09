@@ -615,10 +615,10 @@ You are a professional infographic image generator. Your sole task is to generat
 </instructions>`;
 
 function mapResolutionToApi(res: string, model: string): string {
-  if (model) {
-    return res;
+  if (res && model) {
+    return '1K';
   }
-  return res;
+  return '1K';
 }
 
 export async function generateInfographic(
