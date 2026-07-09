@@ -15,7 +15,7 @@ describe('geminiService', () => {
     orchestratorModel: 'gemini-3.5-flash',
     imageGenModel: 'gemini-3.1-flash-lite-image',
     thinkingLevel: 'HIGH',
-    imageResolution: '0.5K',
+    imageResolution: '1K',
     timeoutSeconds: 180,
   };
 

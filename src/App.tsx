@@ -130,7 +130,6 @@ export default function App() {
             error={state.error}
             onClearError={flow.clearError}
             onRefine={flow.handleRefine}
-            onUpgradeResolution={flow.handleUpgradeResolution}
             onDownload={flow.handleDownload}
             onReset={flow.reset}
             history={state.history}

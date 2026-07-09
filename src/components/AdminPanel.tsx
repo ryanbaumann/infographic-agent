@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { AdminConfig, ImageResolution } from '../types';
+import type { AdminConfig } from '../types';
 import { DEFAULT_ADMIN_CONFIG } from '../types';
 import { saveApiKey, clearApiKey, hasApiKey, getTrialTurnsCount } from '../services/geminiService';
 
@@ -18,7 +18,6 @@ const sectionClasses = 'p-6 border-b border-gborder-light dark:border-gborder-da
 
 export default function AdminPanel({ config, onUpdate, onClose }: AdminPanelProps) {
   const thinkingLevels: AdminConfig['thinkingLevel'][] = ['LOW', 'HIGH'];
-  const resolutions: ImageResolution[] = ['0.5K', '1K', '2K'];
   const [keyDraft, setKeyDraft] = useState('');
   const [showKey, setShowKey] = useState(false);
   const [keyIsSet, setKeyIsSet] = useState(() => hasApiKey(config));
@@ -152,26 +151,6 @@ export default function AdminPanel({ config, onUpdate, onClose }: AdminPanelProp
                 }`}
               >
                 {level}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Default Resolution */}
-        <div className={sectionClasses}>
-          <label className={labelClasses}>Default Resolution</label>
-          <div className="flex gap-2">
-            {resolutions.map((res) => (
-              <button
-                key={res}
-                onClick={() => onUpdate({ imageResolution: res })}
-                className={`flex-1 px-3 py-2 rounded-gbtn text-sm font-medium transition-colors ${
-                  config.imageResolution === res
-                    ? 'bg-gblue-500 text-white'
-                    : 'bg-gsurface-light dark:bg-gsurface-elevated-dark text-gtext-secondary dark:text-gtext-secondary-dark hover:bg-gsurface-light/80 dark:hover:bg-gsurface-elevated-dark/80'
-                }`}
-              >
-                {res}
               </button>
             ))}
           </div>

@@ -551,7 +551,7 @@ export async function prepareInfographic(
         systemInstruction: buildSystemInstruction(),
         ...(!model.includes('image') ? {
           thinkingConfig: {
-            thinkingLevel: adminConfig.thinkingLevel || 'LOW',
+            thinkingLevel: 'LOW',
             includeThoughts: true
           },
           tools: [{ googleSearch: {} }, { urlContext: {} }],
@@ -615,11 +615,9 @@ You are a professional infographic image generator. Your sole task is to generat
 </instructions>`;
 
 function mapResolutionToApi(res: string, model: string): string {
-  if (model === 'gemini-3.1-flash-lite-image') {
-    // gemini-3.1-flash-lite-image only supports 1K resolution (1024px)
-    return '1K';
+  if (model) {
+    return res;
   }
-  if (res === '0.5K') return '1K'; // '512' is not supported by Gemini image generation models
   return res;
 }
 
@@ -656,6 +654,10 @@ export async function generateInfographic(
       imageConfig: {
         aspectRatio: config.aspectRatio,
         imageSize: mapResolutionToApi(config.resolution, model),
+      },
+      thinkingConfig: {
+        thinkingLevel: 'HIGH',
+        includeThoughts: true,
       },
     };
 
@@ -753,12 +755,10 @@ export async function refineInfographic(
         aspectRatio: config.aspectRatio,
         imageSize: mapResolutionToApi(config.resolution, model),
       },
-      ...( (model.includes('flash') || model.includes('pro')) ? {
-        thinkingConfig: {
-          thinkingLevel: model.includes('image') ? 'HIGH' : (adminConfig.thinkingLevel || 'LOW'),
-          includeThoughts: true
-        }
-      } : {}),
+      thinkingConfig: {
+        thinkingLevel: model.includes('image') ? 'HIGH' : 'LOW',
+        includeThoughts: true,
+      },
     };
 
     const chat = ai.chats.create({

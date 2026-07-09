@@ -99,8 +99,8 @@ describe('useInfographicFlow', () => {
 
       expect(result.current.state.adminConfig.orchestratorModel).toBe('gemini-3.5-flash');
       expect(result.current.state.adminConfig.imageGenModel).toBe('gemini-3.1-flash-lite-image');
-      expect(result.current.state.adminConfig.imageResolution).toBe('0.5K');
-      expect(result.current.state.config.resolution).toBe('0.5K');
+      expect(result.current.state.adminConfig.imageResolution).toBe('1K');
+      expect(result.current.state.config.resolution).toBe('1K');
     });
   });
 

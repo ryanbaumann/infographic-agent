@@ -117,7 +117,7 @@ export const DEFAULT_ADMIN_CONFIG: AdminConfig = {
   orchestratorModel: 'gemini-3.5-flash',
   imageGenModel: 'gemini-3.1-flash-lite-image',
   thinkingLevel: 'LOW',
-  imageResolution: '0.5K',
+  imageResolution: '1K',
   timeoutSeconds: 180,
 };
 
@@ -136,7 +136,7 @@ export const DEFAULT_INFOGRAPHIC_CONFIG: InfographicConfig = {
   mode: 'data-story',
   customModeText: '',
   aspectRatio: '9:16',
-  resolution: '0.5K',
+  resolution: '1K',
   colorScheme: 'auto',
   specificInstructions: '',
 };

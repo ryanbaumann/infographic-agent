@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import type { GenerationPhase, PrepareResult, GenerationResult, HistoryEntry, ThoughtBubble, ChatMessage, InfographicMode, ImageResolution, AspectRatio, AgentLoopState } from '../types';
+import type { GenerationPhase, PrepareResult, GenerationResult, HistoryEntry, ThoughtBubble, ChatMessage, InfographicMode, AspectRatio, AgentLoopState } from '../types';
 import { useBlobUrl } from '../hooks/useBlobUrl';
 import BeforeAfterSlider from './BeforeAfterSlider';
 import ThoughtStream from './ThoughtStream';
@@ -12,7 +12,6 @@ interface StepStudioProps {
   currentResult: GenerationResult | null;
   error: string | null;
   onRefine: (instruction: string) => void;
-  onUpgradeResolution: (res: ImageResolution) => void;
   onDownload: () => void;
   onReset: () => void;
   history: HistoryEntry[];
@@ -34,7 +33,6 @@ export default function StepStudio({
   currentResult,
   error,
   onRefine,
-  onUpgradeResolution,
   onDownload,
   onReset,
   history,
@@ -216,11 +214,11 @@ export default function StepStudio({
               <button type="button" onClick={onReset} className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-gbtn border border-gborder-light dark:border-gborder-dark text-gtext-primary dark:text-gtext-primary-dark bg-white dark:bg-gsurface-card-dark hover:bg-gsurface-light dark:hover:bg-gsurface-elevated-dark font-medium text-sm transition-all duration-200 shadow-gcard-sm">
                 <span className="material-symbols-outlined text-xl">add</span>New
               </button>
-              <button type="button" onClick={() => onUpgradeResolution('1K')} disabled={isRefining} className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-gbtn border border-gborder-light dark:border-gborder-dark text-gtext-primary dark:text-gtext-primary-dark bg-white dark:bg-gsurface-card-dark hover:bg-gsurface-light dark:hover:bg-gsurface-elevated-dark font-medium text-sm transition-all duration-200 shadow-gcard-sm disabled:opacity-50 disabled:cursor-not-allowed">
-                <span className="material-symbols-outlined text-xl">hd</span>Upgrade to 1K
+              <button type="button" disabled className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-gbtn border border-gborder-light dark:border-gborder-dark text-gtext-secondary/50 dark:text-gtext-secondary-dark/50 bg-gsurface-light/50 dark:bg-gsurface-card-dark/30 font-medium text-sm cursor-not-allowed opacity-60">
+                <span className="material-symbols-outlined text-xl text-gtext-secondary/40">high_quality</span>Upgrade to 2K <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-gblue-500/10 text-gblue-500">Premium</span>
               </button>
-              <button type="button" onClick={() => onUpgradeResolution('2K')} disabled={isRefining} className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-gbtn border border-gborder-light dark:border-gborder-dark text-gtext-primary dark:text-gtext-primary-dark bg-white dark:bg-gsurface-card-dark hover:bg-gsurface-light dark:hover:bg-gsurface-elevated-dark font-medium text-sm transition-all duration-200 shadow-gcard-sm disabled:opacity-50 disabled:cursor-not-allowed">
-                <span className="material-symbols-outlined text-xl">high_quality</span>Upgrade to 2K
+              <button type="button" disabled className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-gbtn border border-gborder-light dark:border-gborder-dark text-gtext-secondary/50 dark:text-gtext-secondary-dark/50 bg-gsurface-light/50 dark:bg-gsurface-card-dark/30 font-medium text-sm cursor-not-allowed opacity-60">
+                <span className="material-symbols-outlined text-xl text-gtext-secondary/40">workspace_premium</span>Upgrade to 4K <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-gblue-500/10 text-gblue-500">Premium</span>
               </button>
               <button type="button" onClick={onDownload} className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-gbtn bg-gblue-600 hover:bg-gblue-700 text-white font-medium text-sm transition-all duration-200 shadow-gcard-sm">
                 <span className="material-symbols-outlined text-xl">download</span>Download

@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
-import type { UploadedFile, InfographicConfig, InfographicMode, AspectRatio, ImageResolution, HistoryEntry } from '../types';
+import type { UploadedFile, InfographicConfig, InfographicMode, AspectRatio, HistoryEntry } from '../types';
 import { MODE_OPTIONS, ASPECT_RATIO_OPTIONS } from '../types';
 import { formatFileSize } from '../services/fileProcessor';
 
@@ -20,12 +20,6 @@ interface StepCreateProps {
 }
 
 const ACCEPTED_TYPES = '.pdf,.csv,.xlsx,.xls,.png,.jpg,.jpeg,.webp,.txt,.md';
-
-const RESOLUTION_OPTIONS: { label: string; shortLabel: string; value: ImageResolution }[] = [
-  { label: 'Default 0.5K', shortLabel: '0.5K', value: '0.5K' },
-  { label: 'Fast 1K', shortLabel: '1K', value: '1K' },
-  { label: 'Standard 2K', shortLabel: '2K', value: '2K' },
-];
 
 function getCategoryIcon(category: string): string {
   switch (category) {
@@ -494,34 +488,6 @@ export default function StepCreate({
                       }}
                     />
                     <span>{option.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </section>
-
-          {/* -- Quality Section -- */}
-          <section>
-            <h4 className="text-sm font-medium text-gtext-secondary dark:text-gtext-secondary-dark uppercase tracking-wider mb-2">
-              Quality
-            </h4>
-            <div className="flex sm:inline-flex w-full sm:w-auto rounded-gpill overflow-hidden border border-gborder-light dark:border-gborder-dark">
-              {RESOLUTION_OPTIONS.map((opt) => {
-                const isSelected = config.resolution === opt.value;
-                return (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    onClick={() => onUpdateConfig({ resolution: opt.value as ImageResolution })}
-                    className={`flex-1 sm:flex-none px-2 sm:px-4 py-2 text-sm font-medium transition-all duration-200 focus-visible:ring-2 focus-visible:ring-gblue-500 focus-visible:outline-none
-                      ${
-                        isSelected
-                          ? 'bg-gblue-600 text-white'
-                          : 'bg-transparent text-gtext-primary dark:text-gtext-primary-dark hover:bg-gsurface-light dark:hover:bg-gsurface-elevated-dark'
-                      }`}
-                  >
-                    <span className="hidden sm:inline">{opt.label}</span>
-                    <span className="sm:hidden">{opt.shortLabel}</span>
                   </button>
                 );
               })}
