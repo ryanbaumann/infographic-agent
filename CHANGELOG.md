@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.2.2] - 2026-07-15
+
+### Fixed
+
+- **Correct npm compatibility payload**: republish the Python 3.9 / `google-genai 1.47.0` compatibility helpers, tests, and minimum-version metadata from merged source. The immutable `3.2.1` registry artifact was published from a stale checkout and did not contain those changes.
+
 ## [3.2.1] - 2026-07-15
 
 ### Fixed
