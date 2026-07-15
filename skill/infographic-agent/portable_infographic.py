@@ -87,11 +87,14 @@ MODES = {
     "technical-deep-dive": "Dense and precise. Architecture diagrams, code snippets in monospace, system-flow arrows, technical terminology.",
     "classroom": "Friendly and illustrative. Numbered steps, visual analogies, approachable language, warm colors.",
     "quick-slide": "Single-slide format with minimal text, high visual impact, presentation-ready large typography.",
+    "brandkit": "Premium brand identity board with clean presentation grids, logo cover mark, color swatches, typography specimens, UI mockups (browser chrome, phone crop, or terminal frame), and an art-directed atmospheric image against a charcoal or warm ivory canvas.",
+    "blog-post": "Editorial thumbnail/hero layout. Combine a punchy bold tagline, large typography, a single dramatic atmospheric/campaign image, clean text strings, and generous negative space to capture user attention.",
+    "portfolio-showcase": "Minimalist case-study layout. Emphasize a clean alignment grid, clear gutters, project milestones or key results, elegant font choices, and clean visual details like browser chrome or small footer labels.",
     "custom": "",
 }
 
-# gemini-3.1-flash-lite-image only supports 1K output.
-SUPPORTED_ASPECTS = {"1:1", "9:16", "16:9", "3:4", "4:3", "1:4"}
+# Supported aspect ratios (extended with editorial layouts 16:10 and 21:9)
+SUPPORTED_ASPECTS = {"1:1", "9:16", "16:9", "3:4", "4:3", "1:4", "16:10", "21:9"}
 
 
 # --------------------------------------------------------------------------- #
@@ -123,6 +126,17 @@ The "prompt" field you output is sent directly to an image-generation model. It 
 - End with composition notes: spacing, alignment, professional polish.
 </prompt_rules>
 
+<visual_modes>
+- data-story: Data-forward layout with charts, graphs, statistical callouts, trend lines, and percentage highlights.
+- executive-summary: Clean and minimal. Large headline numbers, 3-5 key takeaways, strategic insights, board-ready aesthetics.
+- technical-deep-dive: Dense and precise. Architecture diagrams, code snippets in monospace, system-flow arrows, technical terminology.
+- classroom: Friendly and illustrative. Numbered steps, visual analogies, approachable language, warm colors.
+- quick-slide: Single-slide format with minimal text, high visual impact, presentation-ready large typography.
+- brandkit: Premium brand identity board with clean presentation grids, logo cover mark, color swatches, typography specimens, UI mockups (browser chrome, phone crop, or terminal frame), and an art-directed atmospheric image against a charcoal or warm ivory canvas.
+- blog-post: Editorial thumbnail/hero layout. Combine a punchy bold tagline, large typography, a single dramatic atmospheric/campaign image, clean text strings, and generous negative space to capture user attention.
+- portfolio-showcase: Minimalist case-study layout. Emphasize a clean alignment grid, clear gutters, project milestones or key results, elegant font choices, and clean visual details like browser chrome or small footer labels.
+</visual_modes>
+
 <output_format>
 Respond with valid JSON only. No markdown fences. No extra text. Schema:
 {
@@ -152,6 +166,8 @@ infographic from the provided prompt.
 - Legible, professional fonts; crisp, clearly readable text; consistent font families.
 - Contrast: minimum 4.5:1 for normal text, 3:1 for large text.
 - Clear visual hierarchy via size, weight, and spacing. Balanced composition with intentional whitespace.
+- Padding & Gutters: Standard padding 5-8% on all edges, consistent spacing between sections (3-5%).
+- Details: Include clean structural elements like thin rules, browser chrome borders, or small labels where appropriate.
 </requirements>"""
 
 REFINE_SYSTEM_PROMPT = """<role>
@@ -621,13 +637,14 @@ def _normalize_to_png(data: bytes, mime: str):
         return data, m
 
 
-def generate_image(client, prompt: str, aspect: str, image_model: str):
+def generate_image(client, prompt: str, aspect: str, image_model: str, resolution: str):
     config = types.GenerateContentConfig(
         response_modalities=["TEXT", "IMAGE"],
-        image_config=types.ImageConfig(aspect_ratio=aspect, image_size="1K"),
+        image_config=types.ImageConfig(aspect_ratio=aspect, image_size=resolution),
+        thinking_config=types.ThinkingConfig(thinking_level="HIGH", include_thoughts=True),
         http_options=types.HttpOptions(timeout=180_000),
     )
-    info(f"🎨 Generating the infographic ({image_model})...")
+    info(f"🎨 Generating the infographic ({image_model}) at {resolution}...")
     return _call_image_model(
         client,
         contents=[f"{prompt}\n\n{IMAGE_SYSTEM_PROMPT}"],
@@ -636,10 +653,11 @@ def generate_image(client, prompt: str, aspect: str, image_model: str):
     )
 
 
-def refine_image(client, image_bytes: bytes, mime: str, instruction: str, aspect: str, image_model: str):
+def refine_image(client, image_bytes: bytes, mime: str, instruction: str, aspect: str, image_model: str, resolution: str):
     config = types.GenerateContentConfig(
         response_modalities=["TEXT", "IMAGE"],
-        image_config=types.ImageConfig(aspect_ratio=aspect, image_size="1K"),
+        image_config=types.ImageConfig(aspect_ratio=aspect, image_size=resolution),
+        thinking_config=types.ThinkingConfig(thinking_level="HIGH", include_thoughts=True),
         http_options=types.HttpOptions(timeout=180_000),
     )
     contents = [
@@ -708,7 +726,7 @@ def open_output(path: str) -> None:
 # Interactive refine loop — fast, iterative preview
 # --------------------------------------------------------------------------- #
 
-def refine_loop(client, image_bytes: bytes, mime: str, output_path: str, aspect: str, auto_open: bool, image_model: str) -> None:
+def refine_loop(client, image_bytes: bytes, mime: str, output_path: str, aspect: str, auto_open: bool, image_model: str, resolution: str) -> None:
     info(
         "\n💬 Refine it, or press Enter to finish.\n"
         '   e.g. "make the header bolder", "use teal accents", "add source citations"'
@@ -724,7 +742,7 @@ def refine_loop(client, image_bytes: bytes, mime: str, output_path: str, aspect:
         if not instruction or instruction.lower() in ("q", "quit", "exit", "done"):
             break
         try:
-            image_bytes, mime = refine_image(client, image_bytes, mime, instruction, aspect, image_model)
+            image_bytes, mime = refine_image(client, image_bytes, mime, instruction, aspect, image_model, resolution)
         except Exception as e:  # noqa: BLE001
             error(_scrub(str(e)))
             continue
@@ -752,6 +770,8 @@ def build_parser() -> argparse.ArgumentParser:
                         help="Infographic style (default: data-story)")
     parser.add_argument("--aspect", "-a", default="9:16", choices=sorted(SUPPORTED_ASPECTS),
                         help="Aspect ratio (default: 9:16)")
+    parser.add_argument("--resolution", "-r", default="1K", choices=["0.5K", "1K", "2K"],
+                        help="Image resolution / size to request from the API (default: 1K)")
     parser.add_argument("--instructions", "-i", default="", help="Extra styling / content instructions")
     parser.add_argument("--image-model", default=IMAGE_MODEL, choices=SUPPORTED_IMAGE_MODELS,
                         help="Image model for the portable skill (default: gemini-3.1-flash-lite-image)")
@@ -793,7 +813,7 @@ def main() -> None:
             plan = direct_prompt(content, args.mode, args.instructions)
         else:
             plan = research_prompt(client, content, args.mode, args.aspect, args.instructions)
-        image_bytes, mime = generate_image(client, plan["prompt"], args.aspect, args.image_model)
+        image_bytes, mime = generate_image(client, plan["prompt"], args.aspect, args.image_model, args.resolution)
     except Exception as e:  # noqa: BLE001
         error(_friendly_api_error(e))
         sys.exit(1)
@@ -807,7 +827,7 @@ def main() -> None:
 
     interactive = not args.yes and sys.stdin.isatty()
     if interactive:
-        refine_loop(client, image_bytes, mime, path, args.aspect, auto_open, args.image_model)
+        refine_loop(client, image_bytes, mime, path, args.aspect, auto_open, args.image_model, args.resolution)
 
     info("\nDone. 🎉")
 

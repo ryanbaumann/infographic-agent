@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.2.0] - 2026-07-15
+
+### Added
+- **New Visual Modes for Portfolios and Blogs**: Added `brandkit`, `blog-post`, and `portfolio-showcase` modes to `--mode` choices, incorporating detailed system instructions for generating premium brand guidelines boards, logo systems, blog header thumbnails, and minimalist portfolio case studies.
+- **Extended Aspect Ratios**: Added support for `16:10` and `21:9` aspect ratios for wider editorial layouts.
+- **Resolution Control**: Added the `--resolution` / `-r` CLI flag supporting `0.5K`, `1K`, and `2K` image generation sizes.
+
+### Changed
+- **Image Generation Thinking Config**: Enabled `thinking_config` with high reasoning level (`thinking_level="HIGH"`) for image generation and refinement calls to align with quality guidelines.
+
 ### Fixed
 
 - **Filename sidecar isolation**: dynamic filename generation no longer blocks the rendered image from reaching review, and filename failures now fall back to a local slug instead of failing an otherwise successful generation.
