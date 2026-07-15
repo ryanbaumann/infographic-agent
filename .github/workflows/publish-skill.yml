@@ -50,6 +50,7 @@ jobs:
         run: |
           node --check bin/infographic-agent.js
           python3 -m py_compile portable_infographic.py
+          python3 -m unittest test_portable_infographic.py
           npm pack --dry-run
 
       - name: Resolve version & publish state

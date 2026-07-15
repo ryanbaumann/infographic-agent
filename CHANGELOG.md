@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.2.1] - 2026-07-15
+
+### Fixed
+
+- **Portable Python SDK compatibility**: feature-detect `ImageConfig.image_size` and `ThinkingConfig.thinking_level` so generation works with `google-genai 1.47.0`, the latest release available to Python 3.9. Current SDKs still request the selected resolution and high thinking; 1.47 uses native image resolution and dynamic thinking instead of failing validation before the API call. The supported minimums are now explicit: Python 3.9 and `google-genai 1.47.0`.
+
 ## [3.2.0] - 2026-07-15
 
 ### Added
