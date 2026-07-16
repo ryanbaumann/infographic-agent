@@ -105,7 +105,16 @@ The SDK types do not always support newer parameters. Use the `as any` cast patt
   - **Warning / Accent**: `gyellow` (`#FBBC04`)
   - **Error / Alerts**: `gred` (`#EA4335`)
 - Map semantic CSS styles (e.g., focus rings, status indicators) to these hex codes.
-- Use native system sans-serif fonts (Inter / Roboto) and Google Material Symbols Outlined for crisp icon rendering.
+- Use the Inter / Roboto sans-serif stack (with a `system-ui` fallback so text stays clean even if the web fonts are blocked).
+
+### Self-Contained Rendering: Build-Time Tailwind + Inline SVG Icons
+- **Do not ship the Tailwind Play CDN (`cdn.tailwindcss.com`) to production.** It is a dev-only, in-browser compiler; when it is slow, blocked by a restrictive network, or down, the *entire* app renders unstyled. Compile Tailwind at build time instead (`tailwind.config.js` + PostCSS) and let `vite-plugin-singlefile` inline the compiled CSS into `dist/index.html`. The design tokens live in `tailwind.config.js`, not an inline `<script>` in `app.html`.
+- **Do not depend on an icon *font* as the only way to render controls.** A Material-Symbols-style ligature font degrades to raw words ("settings", "download") whenever the font is slow or blocked — an embarrassing, very visible failure. Render icons as inline SVGs via `lucide-react` through a small `Icon` wrapper (`src/components/Icon.tsx`) that maps names → components and sizes to `1em` so existing `text-*` classes keep controlling size and color. Icons then ship in the bundle and always render.
+- **Load web fonts non-render-blocking.** The Inter/Roboto stylesheet is the only remaining optional fetch; load it with `<link rel="preload" as="style" onload="this.rel='stylesheet'">` (+ a `<noscript>` fallback), not a plain render-blocking `<link rel="stylesheet">`. A `preload` does not block the window `load` event, so a slow or blocked font host can no longer stall first paint or `load` — verified: with the font host hanging, `load` fires in ~140ms and text simply uses the `system-ui` fallback until Inter arrives. (A plain stylesheet link kept `load` pending for the full 30s timeout when the host hung, which also broke Playwright specs that navigate with `waitUntil: 'load'`.)
+- **Net effect:** the built single-file app renders fully with zero blocking CDN dependency (verified by loading it with all external requests blocked). The one optional, non-blocking fetch left is the Google web fonts, which fall back to `system-ui` with no layout change.
+
+### Keep the primary mobile CTA above the fold
+- When adding copy to the hero (e.g. a trust/pricing line), re-check that the primary call-to-action still sits within the mobile viewport. The `mobile.spec.ts` `toBeInViewport()` assertion catches this. Compact the hero on small screens (`space-y-8 py-8 sm:space-y-12 sm:py-12`, smaller heading) rather than letting added lines push the CTA off-screen.
 
 ### Download Optimizations & Filename Generation
 - **Lossless PNG Downloads**: Downloaded files are served as lossless PNG rather than converting to JPEG via canvas. This avoids quality loss and prevents transparent alpha channels from rendering with weird artifacting.
@@ -133,20 +142,23 @@ The SDK types do not always support newer parameters. Use the `as any` cast patt
 
 ### Content Security Policy (CSP)
 
-A strict CSP prevents inline script injection and restricts external resource loading:
+A strict CSP restricts external resource loading:
 
 ```
 default-src 'self'
-script-src 'self' https://cdn.tailwindcss.com
-style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.tailwindcss.com
+script-src 'self' 'unsafe-inline'
+style-src 'self' 'unsafe-inline' https://fonts.googleapis.com
+font-src 'self' https://fonts.gstatic.com https://fonts.googleapis.com
+connect-src 'self' https://generativelanguage.googleapis.com
 frame-ancestors 'none'
 ```
 
 Key decisions:
 - `default-src 'self'`: All resources must be same-origin unless explicitly whitelisted
-- `unsafe-inline` for styles only: Required for Tailwind CDN; scripts are always same-origin
+- No external script host: compiling Tailwind at build time let us drop `https://cdn.tailwindcss.com` from `script-src`/`style-src` entirely (one fewer trusted origin, and one fewer single point of failure).
+- `'unsafe-inline'` is required by the single-file build: `vite-plugin-singlefile` inlines the app bundle as an inline `<script>` and the compiled CSS as an inline `<style>`. The only remaining allowed style/font host is Google Fonts (Inter/Roboto).
 - `frame-ancestors 'none'`: Prevent embedding in iframes (clickjacking protection)
-- No inline script execution: All interactivity via React components
+- Keep this CSP in sync across `app.html` (meta tag), `nginx.conf`, and `public/_headers`.
 
 ### File Upload Validation
 
@@ -185,9 +197,14 @@ Mitigations for localStorage:
 
 For production: Implement optional backend proxy pattern to move key server-side.
 
-### Rate Limiting
+### Rate Limiting & the Free Trial
 
-Client-side token bucket algorithm (10 requests/minute) provides UX feedback but is not a security control. For production, implement server-side rate limiting in a backend proxy.
+Two distinct client-side gates, neither of which is a security control:
+
+1. **Free-trial turn limit** (`TRIAL_TURN_LIMIT`, default 5): only active when a build-time `VITE_GEMINI_API_KEY` is present *and* the user has not saved their own key. It lets a visitor generate an infographic and iterate a few times before bringing their own (free) key. Keep the messaging **honest and visible**: `getTrialStatus()` distinguishes "using your own key (no limit)" from "on the trial with N turns left", and the UI surfaces the remaining count on the hero, the Create step, the Studio step, and in Settings — not only in an after-the-fact error. A pitfall we fixed: `hasApiKey()` returns true during an active trial, so basing the Settings "key saved?" copy on it made the panel claim a key was saved and hid the trial counter. Base user-facing "do you have your own key" checks on `hasUserApiKey()` (which ignores the built-in trial key) instead.
+2. **Token bucket** (10 requests/minute) purely smooths accidental request storms.
+
+For hard, enforceable limits, implement server-side rate limiting in a backend proxy — a client-side counter can be reset by clearing browser storage.
 
 ---
 
@@ -332,4 +349,15 @@ Learning:
 2. **Image Model Thinking Level**: Image models support `thinkingConfig` to return thought streams during generation, but reject `thinkingLevel: 'LOW'` with a `400 Bad Request`. They require `thinkingLevel: 'HIGH'`.
 3. **CORS/SRI Play CDN Support**: The Tailwind Play CDN (`cdn.tailwindcss.com`) does not return CORS headers, so using `crossorigin="anonymous"` or `integrity` checks will cause browser resource loading blocks.
 Evidence: `src/services/geminiService.ts#L398`, `src/hooks/useInfographicFlow.ts#L45`, `app.html#L31`
-Use next time: Keep `googleSearch` and `urlContext` restricted to the text-based analysis model (`gemini-3.5-flash`). Ensure all image model calls with thinking support are locked to `thinkingLevel: 'HIGH'`. Remove `integrity` and `crossorigin` flags when using Play CDN.
+Use next time: Keep `googleSearch` and `urlContext` restricted to the text-based analysis model (`gemini-3.5-flash`). Ensure all image model calls with thinking support are locked to `thinkingLevel: 'HIGH'`.
+
+### 2026-07-16 — Self-Contained UI: Kill CDN Dependencies, Clarify the Trial
+
+Context: A UI/UX audit found the app was unusable whenever `cdn.tailwindcss.com` was unreachable (restrictive networks, offline, CDN outage) — Playwright rendered a completely unstyled page, and Material Symbols degraded to raw ligature words. The free-trial messaging was also contradictory: Settings claimed a key was "saved" during an active trial and hid the remaining-turn count.
+Learning:
+1. **Compile Tailwind at build time; never ship the Play CDN.** `tailwind.config.js` + PostCSS, inlined into the single-file bundle. Removes the runtime compiler, the FOUC, and a CSP script origin.
+2. **Render icons as inline SVGs (`lucide-react`), not an icon font.** A centralized `Icon` component maps the old Material Symbols names → lucide components and sizes to `1em`, so `text-*` classes still control size/color. No font request means no "raw word" failure mode. (`lucide-react` was already a dependency but unused.)
+3. **Make the trial honest and always visible.** Add `TRIAL_TURN_LIMIT`, `hasUserApiKey()`, and `getTrialStatus()`; base "do you have your own key" UI on `hasUserApiKey()` (ignores the built-in trial key), and show remaining turns on hero/create/studio/settings.
+4. **The CORS/SRI-on-Play-CDN quirk from the prior entry is now moot** — we no longer load the Play CDN at all.
+Evidence: `tailwind.config.js`, `postcss.config.js`, `src/index.css`, `src/components/Icon.tsx`, `src/components/TrialNotice.tsx`, `src/services/geminiService.ts` (`getTrialStatus`), `app.html` (no CDN `<script>`).
+Use next time: Verify a production build renders with **all external requests blocked** before calling a static SPA "done" — a CDN that works on your laptop is still a single point of failure for everyone behind a firewall.

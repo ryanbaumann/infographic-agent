@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Self-contained web app rendering (no CDN dependency)**: Tailwind is now compiled at build time (`tailwind.config.js` + PostCSS) and inlined into the single-file bundle instead of loading the runtime Tailwind Play CDN. Icons are now inline `lucide-react` SVGs (via a new `src/components/Icon.tsx` wrapper) rather than the Material Symbols icon font. The built `dist/index.html` renders fully with all external requests blocked — no more unstyled page or raw "ligature word" icons on restrictive/offline networks.
+- **Clearer free-trial / bring-your-own-key UX**: the remaining free trial turns are now shown honestly on the hero, Create, and Studio screens and in Settings. Fixed a bug where the Settings panel claimed a key was "saved" during an active trial and hid the turn counter. Centralized the limit as `TRIAL_TURN_LIMIT` and added `getTrialStatus()` / `hasUserApiKey()` helpers.
+- **Tightened CSP**: dropped `https://cdn.tailwindcss.com` from `script-src`/`style-src` across `app.html`, `nginx.conf`, and `public/_headers` now that no runtime CDN is used.
+
+### Removed
+- Non-functional grayed-out "Upgrade to 2K / 4K Premium" buttons in the Studio action row, which added clutter without doing anything.
+
 ## [3.2.2] - 2026-07-15
 
 ### Fixed

@@ -84,8 +84,8 @@ A CSP is delivered three ways — a `<meta>` tag in `app.html`, `public/_headers
 
 ```
 default-src 'self'
-script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com
-style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.tailwindcss.com
+script-src 'self' 'unsafe-inline'
+style-src 'self' 'unsafe-inline' https://fonts.googleapis.com
 font-src 'self' https://fonts.gstatic.com https://fonts.googleapis.com
 connect-src 'self' https://generativelanguage.googleapis.com
 img-src 'self' data: blob:
@@ -94,10 +94,12 @@ base-uri 'self'
 form-action 'self'
 ```
 
-**Known limitation:** `script-src` includes `'unsafe-inline'`. This is required by the Tailwind Play CDN's inline configuration script (see `docs/learnings.md` — the Play CDN does not support SRI/CORS), and by the single-file production build, which inlines the app bundle into `dist/index.html`. It means the CSP does **not** block inline script injection; the real XSS defense is that the app never renders untrusted HTML (React text rendering only, no `dangerouslySetInnerHTML`). Compiling Tailwind at build time and moving to nonce-based scripts would allow dropping `'unsafe-inline'` — contributions welcome.
+There are **no external script origins** — Tailwind is compiled at build time and icons are inline SVGs, so the app carries no runtime CDN dependency. The only remaining third-party origin is Google Fonts (`fonts.googleapis.com` / `fonts.gstatic.com`) for the Inter/Roboto webfonts, which degrade gracefully to the system sans-serif if blocked.
+
+**Known limitation:** `script-src` includes `'unsafe-inline'`. This is required by the single-file production build, which inlines the app bundle into `dist/index.html` (`vite-plugin-singlefile`). It means the CSP does **not** block inline script injection; the real XSS defense is that the app never renders untrusted HTML (React text rendering only, no `dangerouslySetInnerHTML`). Moving to a nonce/hash-based inline script would allow dropping `'unsafe-inline'` — contributions welcome.
 
 What the CSP does enforce:
-- **Script/style origins** - only same-origin and the pinned CDNs can serve script and style files
+- **Script/style origins** - scripts are same-origin only; styles are same-origin plus Google Fonts
 - **Network egress** - the page can only talk to the Gemini API endpoint (`generativelanguage.googleapis.com`)
 - **Framing attacks** - page cannot be embedded in iframes (header-based `frame-ancestors` plus `X-Frame-Options: DENY`)
 - **Form hijacking** - forms can only submit to same origin
@@ -121,7 +123,7 @@ Supported formats:
 
 ### Subresource Integrity (SRI) and CDNs
 
-Note: The Tailwind Play CDN (`cdn.tailwindcss.com`) does not support CORS headers (it does not return `Access-Control-Allow-Origin`). Therefore, standard Subresource Integrity (SRI) hashes and strict Cross-Origin-Embedder-Policy (COEP) are incompatible with the Play CDN and have been omitted to ensure the script loads correctly in all browsers. If a production-level SRI is required, the project should be compiled using Tailwind's build-time CLI or self-hosted.
+The app no longer loads any third-party JavaScript or CSS at runtime — Tailwind is compiled at build time and inlined, and icons are inline `lucide-react` SVGs. Since scripts and styles are same-origin (inlined into `dist/index.html`), there is no cross-origin resource to attach an SRI hash to; the integrity guarantee comes from the file being served from your own origin. The only third-party fetch is the Google Fonts stylesheet, which is non-critical (text falls back to the system font if it fails to load).
 
 ### Security Headers
 

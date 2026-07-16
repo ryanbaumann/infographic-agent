@@ -1,5 +1,6 @@
 import { useEffect, useRef, useMemo, createElement, type ReactNode } from 'react';
 import type { ThoughtBubble, PrepareResult, GenerationPhase, AgentLoopState } from '../types';
+import Icon from './Icon';
 
 interface ThoughtStreamProps {
   thoughts: ThoughtBubble[];
@@ -135,9 +136,7 @@ function LoopStatus({ agentLoop }: { agentLoop: AgentLoopState }) {
             ? 'bg-ggreen/10 text-ggreen-600 dark:text-ggreen'
             : 'bg-gblue-50 dark:bg-gblue-900/30 text-gblue-600 dark:text-gblue-300'
         }`}>
-          <span className="material-symbols-outlined text-sm">
-            {agentLoop.hitlStatus === 'awaiting-input' ? 'person_check' : 'sync'}
-          </span>
+          <Icon name={agentLoop.hitlStatus === 'awaiting-input' ? 'person_check' : 'sync'} className="text-sm" />
           {agentLoop.hitlStatus === 'awaiting-input' ? 'HITL review' : 'Running'}
         </span>
       </div>
@@ -159,9 +158,7 @@ function LoopStatus({ agentLoop }: { agentLoop: AgentLoopState }) {
             }`}
             title={loopPhase.detail}
           >
-            <span className={`material-symbols-outlined text-sm ${getPhaseClass(loopPhase.status)}`}>
-              {getPhaseIcon(loopPhase.status)}
-            </span>
+            <Icon name={getPhaseIcon(loopPhase.status)} className={`text-sm ${getPhaseClass(loopPhase.status)} ${loopPhase.status === 'active' ? 'animate-spin' : ''}`} />
             <span className="truncate">{loopPhase.label}</span>
           </div>
         ))}
@@ -187,11 +184,11 @@ export default function ThoughtStream({ thoughts, phase, elapsed, prepareResult,
       {/* Header with timer */}
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold text-gtext-primary dark:text-gtext-primary-dark flex items-center gap-1.5">
-          <span className="material-symbols-outlined text-lg text-gblue-600 dark:text-gblue-300">psychology</span>
+          <Icon name="psychology" className="text-lg text-gblue-600 dark:text-gblue-300" />
           Agent Loop
         </h3>
         <div className="flex items-center gap-1.5 text-xs text-gblue-600 dark:text-gblue-300 font-medium">
-          <span className="material-symbols-outlined text-sm">timer</span>
+          <Icon name="timer" className="text-sm" />
           {formatTime(elapsed)}
         </div>
       </div>
@@ -216,7 +213,7 @@ export default function ThoughtStream({ thoughts, phase, elapsed, prepareResult,
         {prepareResult && (
           <div className="bg-white dark:bg-gsurface-card-dark rounded-gbtn p-3 border border-gborder-light dark:border-gborder-dark shadow-gcard-sm animate-scale-in mt-2">
             <div className="flex items-center gap-1.5 mb-2">
-              <span className="material-symbols-outlined text-gsuccess text-sm">check_circle</span>
+              <Icon name="check_circle" className="text-gsuccess text-sm" />
               <span className="text-xs font-semibold text-gsuccess">Analysis Complete</span>
             </div>
             <p className="text-sm font-medium text-gtext-primary dark:text-gtext-primary-dark">
@@ -231,12 +228,12 @@ export default function ThoughtStream({ thoughts, phase, elapsed, prepareResult,
             {qualityChecks.length > 0 && (
               <div className="mt-2 flex flex-wrap items-center gap-1.5">
                 <span className="inline-flex items-center gap-1 rounded-gpill bg-gsuccess-50 dark:bg-gsuccess/10 px-2 py-0.5 text-[11px] font-medium text-gsuccess-600 dark:text-gsuccess">
-                  <span className="material-symbols-outlined text-sm">verified</span>
+                  <Icon name="verified" className="text-sm" />
                   {passedQualityChecks}/{qualityChecks.length} evals passed
                 </span>
                 {warningQualityChecks > 0 && (
                   <span className="inline-flex items-center gap-1 rounded-gpill bg-gwarning-50 dark:bg-gwarning/10 px-2 py-0.5 text-[11px] font-medium text-gwarning dark:text-gwarning">
-                    <span className="material-symbols-outlined text-sm">warning</span>
+                    <Icon name="warning" className="text-sm" />
                     {warningQualityChecks} warning{warningQualityChecks === 1 ? '' : 's'}
                   </span>
                 )}
@@ -263,9 +260,7 @@ export default function ThoughtStream({ thoughts, phase, elapsed, prepareResult,
         {/* Phase indicator */}
         {phase === 'generating' && (
           <div className="flex items-center gap-2 py-2 animate-fade-in">
-            <span className="material-symbols-outlined text-lg text-gblue-600 dark:text-gblue-300 animate-spin">
-              progress_activity
-            </span>
+            <Icon name="progress_activity" className="text-lg text-gblue-600 dark:text-gblue-300 animate-spin" />
             <span className="text-xs font-medium text-gblue-600 dark:text-gblue-300">
               Generating image...
             </span>

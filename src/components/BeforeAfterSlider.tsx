@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
+import Icon from './Icon';
 
 interface BeforeAfterSliderProps {
   beforeImage: string; // base64 or blob url
@@ -97,7 +98,7 @@ export default function BeforeAfterSlider({ beforeImage, afterImage, className, 
         <div
           className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 bg-white rounded-full border-2 border-gborder-300 shadow-lg flex items-center justify-center cursor-ew-resize"
         >
-          <span className="material-symbols-outlined text-gtext-500 text-sm">drag_handle</span>
+          <Icon name="drag_handle" className="text-gtext-secondary text-sm" />
         </div>
       </div>
 
