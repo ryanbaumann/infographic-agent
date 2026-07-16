@@ -4,6 +4,9 @@ import { useBlobUrl } from '../hooks/useBlobUrl';
 import BeforeAfterSlider from './BeforeAfterSlider';
 import ThoughtStream from './ThoughtStream';
 import ChatPanel from './ChatPanel';
+import Icon from './Icon';
+import TrialNotice from './TrialNotice';
+import type { TrialStatus } from '../services/geminiService';
 
 interface StepStudioProps {
   phase: GenerationPhase;
@@ -24,6 +27,7 @@ interface StepStudioProps {
   aspectRatio: AspectRatio;
   onClearError: () => void;
   onOpenSettings: () => void;
+  trial: TrialStatus;
 }
 
 export default function StepStudio({
@@ -45,6 +49,7 @@ export default function StepStudio({
   aspectRatio,
   onClearError,
   onOpenSettings,
+  trial,
 }: StepStudioProps) {
   // === State ===
   const [elapsed, setElapsed] = useState(0);
@@ -147,7 +152,7 @@ export default function StepStudio({
             ) : (
               <div className="relative rounded-gcard overflow-hidden w-full max-w-lg flex items-center justify-center bg-gradient-to-r from-gsurface-light via-white to-gsurface-light dark:from-gsurface-dark dark:via-gsurface-card-dark dark:to-gsurface-dark bg-[length:200%_100%] animate-shimmer" style={{ aspectRatio: skeletonAspect }}>
                 <div className="text-center space-y-4" aria-live="polite">
-                  <span className="material-symbols-outlined text-5xl text-gtext-secondary/40 dark:text-gtext-secondary-dark/40">auto_awesome</span>
+                  <Icon name="auto_awesome" className="text-5xl text-gtext-secondary/40 dark:text-gtext-secondary-dark/40" />
                   <p className="text-gtext-secondary dark:text-gtext-secondary-dark font-medium text-lg">Creating your infographic...</p>
                   <p className="text-gtext-secondary/60 dark:text-gtext-secondary-dark/60 text-sm">{formatTime(elapsed)}</p>
                 </div>
@@ -169,7 +174,7 @@ export default function StepStudio({
           <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center cursor-pointer" onClick={() => setFullscreen(false)}>
             <img src={currentImageUrl} alt="Infographic fullscreen" className="max-w-[95vw] max-h-[95vh] object-contain" />
             <button type="button" className="absolute top-4 right-4 text-white/70 hover:text-white transition-colors" onClick={(e) => { e.stopPropagation(); setFullscreen(false); }}>
-              <span className="material-symbols-outlined text-3xl">close</span>
+              <Icon name="close" className="text-3xl" />
             </button>
           </div>
         )}
@@ -181,7 +186,7 @@ export default function StepStudio({
                <div className="space-y-3">
                  <div className="flex items-center justify-between px-2">
                    <h3 className="text-sm font-semibold text-gtext-primary dark:text-gtext-primary-dark flex items-center gap-1.5">
-                     <span className="material-symbols-outlined text-lg text-gblue-600 dark:text-gblue-300">compare</span>
+                     <Icon name="compare" className="text-lg text-gblue-600 dark:text-gblue-300" />
                      Before / After Comparison
                    </h3>
                    <button type="button" onClick={() => setPreviousImage(null)} className="text-xs text-gtext-secondary hover:text-gtext-primary transition-colors">
@@ -211,26 +216,21 @@ export default function StepStudio({
                </div>
             )}
             <div className="flex flex-wrap items-center justify-center gap-3">
-              <button type="button" onClick={onReset} className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-gbtn border border-gborder-light dark:border-gborder-dark text-gtext-primary dark:text-gtext-primary-dark bg-white dark:bg-gsurface-card-dark hover:bg-gsurface-light dark:hover:bg-gsurface-elevated-dark font-medium text-sm transition-all duration-200 shadow-gcard-sm">
-                <span className="material-symbols-outlined text-xl">add</span>New
-              </button>
-              <button type="button" disabled className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-gbtn border border-gborder-light dark:border-gborder-dark text-gtext-secondary/50 dark:text-gtext-secondary-dark/50 bg-gsurface-light/50 dark:bg-gsurface-card-dark/30 font-medium text-sm cursor-not-allowed opacity-60">
-                <span className="material-symbols-outlined text-xl text-gtext-secondary/40">high_quality</span>Upgrade to 2K <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-gblue-500/10 text-gblue-500">Premium</span>
-              </button>
-              <button type="button" disabled className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-gbtn border border-gborder-light dark:border-gborder-dark text-gtext-secondary/50 dark:text-gtext-secondary-dark/50 bg-gsurface-light/50 dark:bg-gsurface-card-dark/30 font-medium text-sm cursor-not-allowed opacity-60">
-                <span className="material-symbols-outlined text-xl text-gtext-secondary/40">workspace_premium</span>Upgrade to 4K <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-gblue-500/10 text-gblue-500">Premium</span>
-              </button>
               <button type="button" onClick={onDownload} className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-gbtn bg-gblue-600 hover:bg-gblue-700 text-white font-medium text-sm transition-all duration-200 shadow-gcard-sm">
-                <span className="material-symbols-outlined text-xl">download</span>Download
+                <Icon name="download" className="text-xl" />Download
               </button>
               <button type="button" onClick={() => setFullscreen(true)} className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-gbtn border border-gborder-light dark:border-gborder-dark text-gtext-primary dark:text-gtext-primary-dark bg-white dark:bg-gsurface-card-dark hover:bg-gsurface-light dark:hover:bg-gsurface-elevated-dark font-medium text-sm transition-all duration-200 shadow-gcard-sm">
-                <span className="material-symbols-outlined text-xl">fullscreen</span>Fullscreen
+                <Icon name="fullscreen" className="text-xl" />Fullscreen
+              </button>
+              <button type="button" onClick={onReset} className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-gbtn border border-gborder-light dark:border-gborder-dark text-gtext-primary dark:text-gtext-primary-dark bg-white dark:bg-gsurface-card-dark hover:bg-gsurface-light dark:hover:bg-gsurface-elevated-dark font-medium text-sm transition-all duration-200 shadow-gcard-sm">
+                <Icon name="add" className="text-xl" />New
               </button>
             </div>
+            <TrialNotice trial={trial} onOpenSettings={onOpenSettings} />
             {history.length > 0 && (
               <div className="space-y-3">
                 <h3 className="text-sm font-semibold text-gtext-primary dark:text-gtext-primary-dark flex items-center gap-1.5">
-                  <span className="material-symbols-outlined text-lg text-gtext-secondary dark:text-gtext-secondary-dark">history</span>
+                  <Icon name="history" className="text-lg text-gtext-secondary dark:text-gtext-secondary-dark" />
                   History
                 </h3>
                 <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin">
@@ -263,9 +263,7 @@ export default function StepStudio({
   // =========================================================================
   return (
     <div className="max-w-4xl mx-auto text-center py-20">
-      <span className="material-symbols-outlined text-6xl text-gtext-secondary/30 dark:text-gtext-secondary-dark/30">
-        auto_awesome
-      </span>
+      <Icon name="auto_awesome" className="text-6xl text-gtext-secondary/30 dark:text-gtext-secondary-dark/30" />
       <p className="text-lg text-gtext-secondary dark:text-gtext-secondary-dark mt-4">
         Preparing to generate your infographic...
       </p>
@@ -296,7 +294,7 @@ function ErrorBanner({ error, onDismiss, onOpenSettings }: { error: string; onDi
       <div className="bg-gradient-to-br from-gblue-50 to-gblue-100/50 dark:from-gblue-950/20 dark:to-gblue-900/10 rounded-gcard p-6 border border-gblue-100 dark:border-gblue-900/30 flex flex-col md:flex-row items-center justify-between gap-6 shadow-gcard-sm animate-fade-in mb-4">
         <div className="flex items-start gap-4">
           <div className="p-3 bg-gblue-500 text-white rounded-gbtn flex-shrink-0 shadow-sm">
-            <span className="material-symbols-outlined text-2xl">auto_awesome</span>
+            <Icon name="auto_awesome" className="text-2xl" />
           </div>
           <div>
             <h4 className="text-base font-bold text-gtext-primary dark:text-gtext-primary-dark">Trial limit reached (5 turns used)</h4>
@@ -318,7 +316,7 @@ function ErrorBanner({ error, onDismiss, onOpenSettings }: { error: string; onDi
             onClick={onOpenSettings}
             className="flex-1 md:flex-initial px-4 py-2 text-sm font-semibold text-white bg-gblue-600 hover:bg-gblue-700 rounded-gbtn shadow-sm transition-colors inline-flex items-center justify-center gap-1.5 cursor-pointer"
           >
-            <span className="material-symbols-outlined text-base">vpn_key</span>
+            <Icon name="vpn_key" className="text-base" />
             Add API Key
           </button>
         </div>
@@ -329,7 +327,7 @@ function ErrorBanner({ error, onDismiss, onOpenSettings }: { error: string; onDi
   return (
     <div role="alert" className="bg-gerror-50 dark:bg-gerror/10 rounded-gbtn p-4 border border-gerror/20 flex items-start justify-between animate-fade-in mb-4">
       <div className="flex items-start gap-3">
-        <span aria-hidden="true" className="material-symbols-outlined text-gerror text-lg flex-shrink-0 mt-0.5">error</span>
+        <Icon name="error" className="text-gerror text-lg flex-shrink-0 mt-0.5" />
         <div>
           <p className="text-sm font-medium text-gerror">Something went wrong</p>
           <p className="text-sm text-gerror/80 mt-1">{error}</p>
@@ -338,15 +336,13 @@ function ErrorBanner({ error, onDismiss, onOpenSettings }: { error: string; onDi
             className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-gerror/70 hover:text-gerror transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gerror rounded px-1 py-0.5"
             aria-label="Copy error details to clipboard"
           >
-            <span aria-hidden="true" className="material-symbols-outlined" style={{ fontSize: '14px' }}>
-              {copied ? 'check' : 'content_copy'}
-            </span>
+            <Icon name={copied ? 'check' : 'content_copy'} className="text-[14px]" />
             {copied ? 'Copied' : 'Copy details'}
           </button>
         </div>
       </div>
       <button onClick={onDismiss} className="text-gerror/60 hover:text-gerror flex-shrink-0 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gerror rounded" aria-label="Dismiss error">
-        <span aria-hidden="true" className="material-symbols-outlined text-lg">close</span>
+        <Icon name="close" className="text-lg" />
       </button>
     </div>
   );

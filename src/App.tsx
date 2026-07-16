@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { useInfographicFlow } from './hooks/useInfographicFlow';
+import { getTrialStatus } from './services/geminiService';
+import Icon from './components/Icon';
 import ThemeToggle from './components/ThemeToggle';
 import AdminPanel from './components/AdminPanel';
 import StepHero from './components/StepHero';
@@ -12,6 +14,7 @@ export default function App() {
   const [showAdmin, setShowAdmin] = useState(false);
 
   const isStudioDisabled = !state.currentResult && state.generationPhase === 'idle';
+  const trial = getTrialStatus(state.adminConfig);
 
   return (
     <div className="min-h-screen flex flex-col bg-gsurface-light dark:bg-gsurface-dark transition-colors duration-300"
@@ -22,7 +25,7 @@ export default function App() {
           <div className="flex items-center justify-between h-16">
             {/* Left: Logo */}
             <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-2xl text-gblue-600">insert_chart</span>
+              <Icon name="insert_chart" className="text-2xl text-gblue-600" />
               <span className="font-semibold text-xl text-gtext-primary dark:text-gtext-primary-dark hidden sm:inline">
                 Infographic Agent
               </span>
@@ -52,7 +55,7 @@ export default function App() {
                           : 'text-gtext-secondary dark:text-gtext-secondary-dark'
                     }`}
                   >
-                    <span aria-hidden="true" className="material-symbols-outlined text-base sm:text-sm">{icon}</span>
+                    <Icon name={icon} className="text-base sm:text-sm" />
                     <span className="hidden sm:inline">{label}</span>
                   </button>
                 );
@@ -80,9 +83,7 @@ export default function App() {
                 title="Settings"
                 aria-label="Open settings"
               >
-                <span aria-hidden="true" className="material-symbols-outlined text-xl text-gtext-secondary dark:text-gtext-secondary-dark">
-                  settings
-                </span>
+                <Icon name="settings" className="text-xl text-gtext-secondary dark:text-gtext-secondary-dark" />
               </button>
             </div>
           </div>
@@ -102,6 +103,7 @@ export default function App() {
               flow.updateConfig({ mode });
               flow.setStep('create');
             }}
+            trial={trial}
           />
         )}
         {state.step === 'create' && (
@@ -119,6 +121,7 @@ export default function App() {
             history={state.history}
             onLoadHistory={flow.loadHistoryEntry}
             onOpenSettings={() => setShowAdmin(true)}
+            trial={trial}
           />
         )}
         {state.step === 'studio' && (
@@ -141,6 +144,7 @@ export default function App() {
             mode={state.config.mode}
             aspectRatio={state.config.aspectRatio}
             onOpenSettings={() => setShowAdmin(true)}
+            trial={trial}
           />
         )}
       </main>

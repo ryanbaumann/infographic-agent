@@ -26,7 +26,7 @@ Upload a PDF, paste a URL, or just describe a topic — a two-agent Gemini pipel
 
 - **Multi-format input** — PDF, CSV/spreadsheets, images (PNG/JPEG/WebP/HEIC), plain text, or just a topic description
 - **6 infographic modes** — Data Story, Executive Summary, Classroom Explainer, Technical Deep-Dive, Quick Slide, and fully Custom
-- **Configurable output** — 6 aspect ratios (square, portrait, landscape, and more) and resolution from 0.5K up to 2K
+- **Configurable output** — 6 aspect ratios (square, portrait, landscape, and more), auto or custom brand colors, and free-form styling instructions
 - **Live "thought" stream** — watch the agent's reasoning render as streaming cards while it researches and designs
 - **Multi-turn refinement chat** — keep talking to the agent to tweak colors, layout, or content after the first draft
 - **Before/after slider** — compare each revision against the original at a glance
@@ -56,6 +56,16 @@ This opens `/app.html` on `http://localhost:3456`.
 | `npm test` | Run Vitest unit tests once |
 | `npm run test:coverage` | Unit tests with coverage report |
 | `npm run test:e2e` | Run the Playwright end-to-end suite (auto-starts the dev server) |
+
+## API Keys & the Free Trial
+
+The app runs on **your own Gemini API key** — it's free to get, and the app never sends it anywhere except Google's Gemini API (it's stored only in your browser's `localStorage`).
+
+- **Just trying it out?** A public deployment can ship with a small built-in **trial key** so you can generate an infographic and iterate on it a few times before committing. You get **5 free turns** (one generation or one refinement each — enough to make something and polish it). The Create and Studio screens always show how many turns are left, and the Settings panel spells it out too.
+- **Ready to keep going?** Grab a free key at [aistudio.google.com/apikey](https://aistudio.google.com/apikey), paste it into **Settings → Gemini API Key**, and the turn limit disappears entirely — it's your key, your Google quota.
+- **Self-hosting?** Leave `VITE_GEMINI_API_KEY` empty at build time and there's no trial at all — every visitor brings their own key from the first generation. Only set a trial key on a deployment you're comfortable paying for, and keep its billing limits low (a client-side key is inspectable in the browser).
+
+The turn count is a lightweight client-side gate for a friendly trial, **not** a security control. The client also applies a small token-bucket rate limit (10 requests/minute) purely to avoid accidental request storms. For hard, enforceable limits, put a backend proxy in front of the Gemini API — see [`SECURITY.md`](SECURITY.md).
 
 ## How It Works
 
@@ -275,10 +285,10 @@ Both serve the built app via nginx on `http://localhost:8080`.
 
 **Google Cloud Run:** [`cloudbuild.yaml`](cloudbuild.yaml) builds the image, pushes it to Container Registry, and deploys it to Cloud Run — wire it up with `gcloud builds submit` or a Cloud Build trigger.
 
-Because the build output is a single `dist/index.html` with all JS inlined (via `vite-plugin-singlefile`), you can also drop it onto any static host (Cloud Storage, S3, GitHub Pages, nginx, etc.) with no server-side runtime at all. Two caveats:
+Because the build output is a single `dist/index.html` with all CSS, JS, and icons inlined (Tailwind is compiled at build time, and icons are inline `lucide-react` SVGs — see `vite-plugin-singlefile`), you can drop it onto any static host (Cloud Storage, S3, GitHub Pages, nginx, etc.) with no server-side runtime at all. Notes:
 
 - **Never build a public artifact with a real key in `.env`** — Vite inlines `VITE_GEMINI_API_KEY` into `dist/index.html` in plaintext. Public deployments should ship key-less; visitors add their own key in the settings panel.
-- The page loads Tailwind's Play CDN and Google Fonts at runtime, so browsers need outbound access to `cdn.tailwindcss.com`, `fonts.googleapis.com`, and `fonts.gstatic.com` (it is not fully offline/air-gap friendly).
+- The app renders fully with **no blocking CDN dependency** — layout, colors, and icons are self-contained, so it works on locked-down networks and even offline (verified by loading the build with every external request blocked). The Inter/Roboto web fonts are the only optional fetch and are loaded **non-render-blocking**, so a slow or blocked font host never delays first paint or page load — text just falls back to the system sans-serif. To send the API calls, browsers still need outbound access to `generativelanguage.googleapis.com`.
 
 ## Testing
 
@@ -307,8 +317,9 @@ infographic-agent/
 │   ├── App.tsx                # Top-level step router (hero → create → studio)
 │   ├── main.tsx
 │   ├── types.ts                # Shared types, config defaults, limits
-│   ├── components/             # StepHero, StepCreate, StepStudio, ChatPanel,
-│   │                           # ThoughtStream, BeforeAfterSlider, ThemeToggle, AdminPanel
+│   ├── components/             # StepHero, StepCreate, StepStudio, ChatPanel, ThoughtStream,
+│   │                           # BeforeAfterSlider, ThemeToggle, AdminPanel, Icon, TrialNotice
+│   ├── index.css                # Tailwind entry (compiled at build time)
 │   ├── hooks/                  # useInfographicFlow (core state machine), useBlobUrl
 │   ├── services/                # geminiService, fileProcessor, downloadService
 │   └── __tests__/               # Vitest unit tests + fixtures

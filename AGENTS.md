@@ -39,7 +39,8 @@ cp .env.example .env
 
 - TypeScript strict mode. Keep types accurate; avoid `any` except where the SDK's types genuinely lag behind the API.
 - ESLint is the source of truth for style; run `npm run lint` before finishing.
-- Styling uses Tailwind utility classes directly in JSX via the CDN build — there are no separate CSS files to edit.
+- Styling uses Tailwind utility classes directly in JSX. Tailwind is compiled at **build time** (`tailwind.config.js` + `postcss.config.js`, entry `src/index.css`), not the runtime Play CDN — the compiled CSS is inlined into the single-file build. Add design tokens (colors, radii, shadows, animations) in `tailwind.config.js`.
+- Icons are inline SVGs via `src/components/Icon.tsx` (a name → `lucide-react` map). Use `<Icon name="..." className="text-xl ..." />` — never the Material Symbols icon font. Add new icons to the map in `Icon.tsx`.
 - Security constraints to preserve when touching related code:
   - The CSP `<meta>` tags in `app.html` — do not loosen them without a clear reason.
   - File upload validation limits: 20MB per file, 50MB total.

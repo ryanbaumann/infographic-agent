@@ -1,3 +1,5 @@
+import Icon from './Icon';
+
 interface ThemeToggleProps {
   theme: 'light' | 'dark';
   onToggle: () => void;
@@ -11,9 +13,7 @@ export default function ThemeToggle({ theme, onToggle }: ThemeToggleProps) {
       title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
       aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
     >
-      <span aria-hidden="true" className="material-symbols-outlined text-xl text-gtext-secondary dark:text-gtext-secondary-dark">
-        {theme === 'light' ? 'dark_mode' : 'light_mode'}
-      </span>
+      <Icon name={theme === 'light' ? 'dark_mode' : 'light_mode'} className="text-xl text-gtext-secondary dark:text-gtext-secondary-dark" />
     </button>
   );
 }

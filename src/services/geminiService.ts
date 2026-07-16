@@ -76,8 +76,8 @@ let cachedApiKey: string | null = null;
 function getAI(adminConfig: AdminConfig): GoogleGenAI {
   const apiKey = getApiKey(adminConfig);
   if (!apiKey) {
-    if (import.meta.env.VITE_GEMINI_API_KEY && getTrialTurnsCount() >= 5) {
-      throw new Error('Trial limit exceeded (5 turns used). Please configure your own Gemini API key in Settings (gear icon) to continue.');
+    if (import.meta.env.VITE_GEMINI_API_KEY && getTrialTurnsCount() >= TRIAL_TURN_LIMIT) {
+      throw new Error(`Trial limit exceeded (${TRIAL_TURN_LIMIT} turns used). Please configure your own Gemini API key in Settings (gear icon) to continue.`);
     }
     throw new Error('API key is required. Please set your Gemini API key in Settings (gear icon).');
   }
@@ -207,6 +207,52 @@ async function retryWithBackoff<T>(
 const LOCAL_STORAGE_KEY = 'infographic-gemini-key';
 const TRIAL_TURNS_KEY = 'infographic-trial-turns';
 
+/**
+ * How many free generation/refinement turns a visitor gets on the built-in
+ * trial key before they need to add their own (free) Gemini key. Enough to
+ * generate an infographic and iterate on it a few times.
+ */
+export const TRIAL_TURN_LIMIT = 5;
+
+/** True when a built-in trial key was inlined at build time. */
+export function hasTrialKey(): boolean {
+  return !!import.meta.env.VITE_GEMINI_API_KEY;
+}
+
+/** True when the user has saved their own key (ignores the built-in trial key). */
+export function hasUserApiKey(adminConfig: AdminConfig): boolean {
+  if (adminConfig.geminiApiKey) return true;
+  try {
+    if (localStorage.getItem(LOCAL_STORAGE_KEY)) return true;
+  } catch {
+    // ignore
+  }
+  return false;
+}
+
+export interface TrialStatus {
+  /** The built-in trial is the active key source (no user key saved yet). */
+  active: boolean;
+  used: number;
+  limit: number;
+  remaining: number;
+  exhausted: boolean;
+}
+
+/** Snapshot of the free-trial state for UI messaging. */
+export function getTrialStatus(adminConfig: AdminConfig): TrialStatus {
+  const used = getTrialTurnsCount();
+  const remaining = Math.max(0, TRIAL_TURN_LIMIT - used);
+  const active = hasTrialKey() && !hasUserApiKey(adminConfig);
+  return {
+    active,
+    used,
+    limit: TRIAL_TURN_LIMIT,
+    remaining,
+    exhausted: used >= TRIAL_TURN_LIMIT,
+  };
+}
+
 export function getTrialTurnsCount(): number {
   try {
     const stored = localStorage.getItem(TRIAL_TURNS_KEY);
@@ -241,7 +287,7 @@ export function getApiKey(adminConfig: AdminConfig): string {
     // localStorage may not be available
   }
 
-  if (import.meta.env.VITE_GEMINI_API_KEY && getTrialTurnsCount() < 5) {
+  if (import.meta.env.VITE_GEMINI_API_KEY && getTrialTurnsCount() < TRIAL_TURN_LIMIT) {
     return import.meta.env.VITE_GEMINI_API_KEY as string;
   }
 
@@ -276,7 +322,7 @@ export function hasApiKey(adminConfig: AdminConfig): boolean {
   } catch {
     // ignore
   }
-  if (import.meta.env.VITE_GEMINI_API_KEY && getTrialTurnsCount() < 5) return true;
+  if (import.meta.env.VITE_GEMINI_API_KEY && getTrialTurnsCount() < TRIAL_TURN_LIMIT) return true;
   return false;
 }
 

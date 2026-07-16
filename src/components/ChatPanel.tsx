@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback, createElement, useMemo, type ReactNode } from 'react';
 import type { ChatMessage, InfographicMode, ThoughtBubble, AgentLoopState } from '../types';
 import { QUICK_ACTIONS, GENERAL_QUICK_ACTIONS } from '../types';
+import Icon from './Icon';
 
 interface ChatPanelProps {
   messages: ChatMessage[];
@@ -154,11 +155,11 @@ export default function ChatPanel({ messages, mode, onSendMessage, isRefining, r
       <div className="px-4 py-3 border-b border-gborder-light dark:border-gborder-dark">
         <div className="flex items-center justify-between gap-3">
           <h3 className="text-sm font-semibold text-gtext-primary dark:text-gtext-primary-dark flex items-center gap-1.5">
-            <span className="material-symbols-outlined text-lg text-gblue-600 dark:text-gblue-300">chat</span>
+            <Icon name="chat" className="text-lg text-gblue-600 dark:text-gblue-300" />
             Review & Refine
           </h3>
           <span className="inline-flex items-center gap-1 rounded-gpill bg-gsurface-light dark:bg-gsurface-elevated-dark px-2 py-1 text-[11px] font-medium text-gtext-secondary dark:text-gtext-secondary-dark">
-            <span className="material-symbols-outlined text-sm">{isRefining ? 'sync' : 'person_check'}</span>
+            <Icon name={isRefining ? 'sync' : 'person_check'} className={`text-sm ${isRefining ? 'animate-spin' : ''}`} />
             Turn {agentLoop.turn || 1}
           </span>
         </div>
@@ -190,7 +191,7 @@ export default function ChatPanel({ messages, mode, onSendMessage, isRefining, r
           <div className="flex justify-start">
              <div className="bg-gsurface-light dark:bg-gsurface-elevated-dark rounded-gcard rounded-bl-sm px-3 py-2 flex flex-col gap-2 max-w-[85%]">
                 <div className="flex items-center gap-1.5 border-b border-gborder-light dark:border-gborder-dark pb-1.5 mb-1">
-                   <span className="material-symbols-outlined text-sm text-gblue-600 dark:text-gblue-300">psychology</span>
+                   <Icon name="psychology" className="text-sm text-gblue-600 dark:text-gblue-300" />
                    <span className="text-xs font-semibold text-gtext-secondary dark:text-gtext-secondary-dark">Thinking...</span>
                    <div className="w-3 h-3 ml-auto border-2 border-gblue-600 dark:border-gblue-300 border-t-transparent rounded-full animate-spin" />
                 </div>
@@ -270,7 +271,7 @@ export default function ChatPanel({ messages, mode, onSendMessage, isRefining, r
             title="Send message (Enter)"
             aria-label="Send message"
           >
-            <span aria-hidden="true" className="material-symbols-outlined text-lg">send</span>
+            <Icon name="send" className="text-lg" />
           </button>
         </div>
       </div>

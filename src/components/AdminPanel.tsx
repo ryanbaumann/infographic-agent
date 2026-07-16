@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import type { AdminConfig } from '../types';
 import { DEFAULT_ADMIN_CONFIG } from '../types';
-import { saveApiKey, clearApiKey, hasApiKey, getTrialTurnsCount } from '../services/geminiService';
+import { saveApiKey, clearApiKey, hasUserApiKey, getTrialStatus } from '../services/geminiService';
+import Icon from './Icon';
 
 interface AdminPanelProps {
   config: AdminConfig;
@@ -20,7 +21,8 @@ export default function AdminPanel({ config, onUpdate, onClose }: AdminPanelProp
   const thinkingLevels: AdminConfig['thinkingLevel'][] = ['LOW', 'HIGH'];
   const [keyDraft, setKeyDraft] = useState('');
   const [showKey, setShowKey] = useState(false);
-  const [keyIsSet, setKeyIsSet] = useState(() => hasApiKey(config));
+  const [keyIsSet, setKeyIsSet] = useState(() => hasUserApiKey(config));
+  const trial = getTrialStatus(config);
 
   return (
     <>
@@ -36,7 +38,7 @@ export default function AdminPanel({ config, onUpdate, onClose }: AdminPanelProp
             onClick={onClose}
             className="p-1 rounded-gbtn hover:bg-gsurface-light dark:hover:bg-gsurface-elevated-dark text-gtext-secondary dark:text-gtext-secondary-dark transition-colors"
           >
-            <span className="material-symbols-outlined">close</span>
+            <Icon name="close" className="text-xl" />
           </button>
         </div>
 
@@ -57,7 +59,7 @@ export default function AdminPanel({ config, onUpdate, onClose }: AdminPanelProp
               className="px-2 rounded-gbtn hover:bg-gsurface-light dark:hover:bg-gsurface-elevated-dark text-gtext-secondary dark:text-gtext-secondary-dark transition-colors"
               aria-label={showKey ? 'Hide API key' : 'Show API key'}
             >
-              <span className="material-symbols-outlined text-xl">{showKey ? 'visibility_off' : 'visibility'}</span>
+              <Icon name={showKey ? 'visibility_off' : 'visibility'} className="text-xl" />
             </button>
           </div>
           <div className="flex gap-2 mt-2">
@@ -91,19 +93,25 @@ export default function AdminPanel({ config, onUpdate, onClose }: AdminPanelProp
             </a>
             .
           </p>
-          {import.meta.env.VITE_GEMINI_API_KEY && !keyIsSet && (
+          {keyIsSet && (
+            <p className="mt-2 text-xs text-gsuccess-600 dark:text-gsuccess flex items-center gap-1">
+              <Icon name="check_circle" className="text-sm" />
+              Using your own key — no turn limit.
+            </p>
+          )}
+          {trial.active && (
             <div className={`mt-3 p-2.5 rounded-gbtn text-xs border ${
-              getTrialTurnsCount() >= 5
+              trial.exhausted
                 ? 'bg-gerror-50 dark:bg-gerror/10 border-gerror/20 text-gerror'
                 : 'bg-gblue-50 dark:bg-gblue-950/20 border-gblue-100 dark:border-gblue-900/30 text-gblue-600 dark:text-gblue-300'
             }`}>
-              {getTrialTurnsCount() >= 5 ? (
+              {trial.exhausted ? (
                 <span>
-                  <span className="font-semibold">Trial Expired:</span> 5/5 turns used. Please save your own API key to continue.
+                  <span className="font-semibold">Free trial used up.</span> You&apos;ve used all {trial.limit} free turns. Add your own free key above to keep generating.
                 </span>
               ) : (
                 <span>
-                  <span className="font-semibold">Free Trial:</span> {getTrialTurnsCount()}/5 turns used.
+                  <span className="font-semibold">Free trial:</span> {trial.remaining} of {trial.limit} turns left. Add your own free key any time to remove the limit.
                 </span>
               )}
             </div>

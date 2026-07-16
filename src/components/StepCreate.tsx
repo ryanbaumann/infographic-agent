@@ -2,6 +2,9 @@ import { useState, useRef, useCallback } from 'react';
 import type { UploadedFile, InfographicConfig, InfographicMode, AspectRatio, HistoryEntry } from '../types';
 import { MODE_OPTIONS, ASPECT_RATIO_OPTIONS } from '../types';
 import { formatFileSize } from '../services/fileProcessor';
+import type { TrialStatus } from '../services/geminiService';
+import Icon from './Icon';
+import TrialNotice from './TrialNotice';
 
 interface StepCreateProps {
   files: UploadedFile[];
@@ -17,6 +20,7 @@ interface StepCreateProps {
   history: HistoryEntry[];
   onLoadHistory: (entry: HistoryEntry) => void;
   onOpenSettings: () => void;
+  trial: TrialStatus;
 }
 
 const ACCEPTED_TYPES = '.pdf,.csv,.xlsx,.xls,.png,.jpg,.jpeg,.webp,.txt,.md';
@@ -50,6 +54,7 @@ export default function StepCreate({
   history,
   onLoadHistory,
   onOpenSettings,
+  trial,
 }: StepCreateProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [textValue, setTextValue] = useState('');
@@ -127,7 +132,7 @@ export default function StepCreate({
         <div className="bg-gradient-to-br from-gblue-50 to-gblue-100/50 dark:from-gblue-950/20 dark:to-gblue-900/10 rounded-gcard p-6 border border-gblue-100 dark:border-gblue-900/30 flex flex-col md:flex-row items-center justify-between gap-6 shadow-gcard-sm animate-fade-in">
           <div className="flex items-start gap-4">
             <div className="p-3 bg-gblue-500 text-white rounded-gbtn flex-shrink-0 shadow-sm">
-              <span className="material-symbols-outlined text-2xl">auto_awesome</span>
+              <Icon name="auto_awesome" className="text-2xl" />
             </div>
             <div>
               <h4 className="text-base font-bold text-gtext-primary dark:text-gtext-primary-dark">Trial limit reached (5 turns used)</h4>
@@ -149,14 +154,14 @@ export default function StepCreate({
               onClick={onOpenSettings}
               className="flex-1 md:flex-initial px-4 py-2 text-sm font-semibold text-white bg-gblue-600 hover:bg-gblue-700 rounded-gbtn shadow-sm transition-colors inline-flex items-center justify-center gap-1.5 cursor-pointer"
             >
-              <span className="material-symbols-outlined text-base">vpn_key</span>
+              <Icon name="vpn_key" className="text-base" />
               Add API Key
             </button>
           </div>
         </div>
       ) : error && (
         <div role="alert" className="bg-gerror-50 dark:bg-gerror/10 rounded-gbtn p-4 border border-gerror/20 flex items-start gap-3 animate-fade-in">
-          <span aria-hidden="true" className="material-symbols-outlined text-gerror text-lg flex-shrink-0 mt-0.5">error</span>
+          <Icon name="error" className="text-gerror text-lg flex-shrink-0 mt-0.5" />
           <p className="flex-1 text-sm text-gerror dark:text-gerror">{error}</p>
           <button
             type="button"
@@ -164,7 +169,7 @@ export default function StepCreate({
             className="text-gerror/60 hover:text-gerror flex-shrink-0 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gerror rounded"
             aria-label="Dismiss error"
           >
-            <span aria-hidden="true" className="material-symbols-outlined text-lg">close</span>
+            <Icon name="close" className="text-lg" />
           </button>
         </div>
       )}
@@ -208,15 +213,14 @@ export default function StepCreate({
               className="hidden"
             />
 
-            <span
-              className={`material-symbols-outlined text-4xl mb-3 transition-colors duration-200 ${
+            <Icon
+              name="upload_file"
+              className={`text-4xl mb-3 transition-colors duration-200 ${
                 isDragging
                   ? 'text-gblue-500'
                   : 'text-gtext-secondary dark:text-gtext-secondary-dark'
               }`}
-            >
-              upload_file
-            </span>
+            />
             <p className="text-sm font-medium text-gtext-primary dark:text-gtext-primary-dark">
               {isDragging ? 'Drop files here' : 'Drop files here or click to browse'}
             </p>
@@ -252,7 +256,7 @@ export default function StepCreate({
                   px-3 py-1.5 rounded-gbtn text-xs font-medium transition-all duration-200
                   inline-flex items-center gap-1 shadow-gcard-sm"
               >
-                <span className="material-symbols-outlined text-sm">add</span>
+                <Icon name="add" className="text-sm" />
                 Add
               </button>
             )}
@@ -274,7 +278,7 @@ export default function StepCreate({
                   bg-gsurface-light dark:bg-gsurface-elevated-dark
                   border border-gborder-light dark:border-gborder-dark"
               >
-                <span className="material-symbols-outlined" style={{ fontSize: '12px' }}>{cap.icon}</span>
+                <Icon name={cap.icon} className="text-[12px]" />
                 {cap.label}
               </span>
             ))}
@@ -304,9 +308,7 @@ export default function StepCreate({
                     px-3 py-2.5 group transition-all duration-200 hover:shadow-gcard-sm"
                 >
                   {/* Category icon */}
-                  <span className="material-symbols-outlined text-xl text-gblue-500 flex-shrink-0">
-                    {getCategoryIcon(file.category)}
-                  </span>
+                  <Icon name={getCategoryIcon(file.category)} className="text-xl text-gblue-500 flex-shrink-0" />
 
                   {/* File info */}
                   <div className="flex-1 min-w-0">
@@ -328,7 +330,7 @@ export default function StepCreate({
                     title={`Remove ${file.name}`}
                     aria-label={`Remove ${file.name}`}
                   >
-                    <span aria-hidden="true" className="material-symbols-outlined text-lg">close</span>
+                    <Icon name="close" className="text-lg" />
                   </button>
                 </div>
               ))}
@@ -346,7 +348,7 @@ export default function StepCreate({
               inline-flex items-center gap-1.5
               hover:bg-gblue-50 dark:hover:bg-gblue-900/20"
           >
-            <span className="material-symbols-outlined text-base">auto_awesome</span>
+            <Icon name="auto_awesome" className="text-base" />
             Try an Example
           </button>
 
@@ -408,15 +410,14 @@ export default function StepCreate({
                       ${option.id === 'custom' ? 'sm:col-span-2' : ''}`}
                   >
                     <div className="flex items-start gap-2.5">
-                      <span
-                        className={`material-symbols-outlined text-xl mt-0.5 ${
+                      <Icon
+                        name={option.icon}
+                        className={`text-xl mt-0.5 ${
                           isSelected
                             ? 'text-gblue-600 dark:text-gblue-400'
                             : 'text-gtext-secondary dark:text-gtext-secondary-dark'
                         }`}
-                      >
-                        {option.icon}
-                      </span>
+                      />
                       <div className="min-w-0">
                         <p
                           className={`text-sm font-medium ${
@@ -574,12 +575,11 @@ export default function StepCreate({
               onClick={() => setInstructionsOpen(!instructionsOpen)}
               className="flex items-center gap-1.5 w-full text-left group"
             >
-              <span
-                className={`material-symbols-outlined text-base text-gtext-secondary dark:text-gtext-secondary-dark
+              <Icon
+                name="chevron_right"
+                className={`text-base text-gtext-secondary dark:text-gtext-secondary-dark
                   transition-transform duration-200 ${instructionsOpen ? 'rotate-90' : ''}`}
-              >
-                chevron_right
-              </span>
+              />
               <h4 className="text-sm font-medium text-gtext-secondary dark:text-gtext-secondary-dark uppercase tracking-wider group-hover:text-gtext-primary dark:group-hover:text-gtext-primary-dark transition-colors">
                 Instructions
               </h4>
@@ -616,9 +616,10 @@ export default function StepCreate({
                 : 'bg-gradient-to-r from-gblue-600/50 to-ggreen/50 text-white/60 opacity-50 cursor-not-allowed'
             }`}
         >
-          <span aria-hidden="true" className="material-symbols-outlined text-xl">auto_awesome</span>
+          <Icon name="auto_awesome" className="text-xl" />
           Generate Infographic
         </button>
+        <TrialNotice trial={trial} onOpenSettings={onOpenSettings} className="mt-3" />
       </div>
     </div>
   );
